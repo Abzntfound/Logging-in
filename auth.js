@@ -1,15 +1,126 @@
-// A&M Hair and Beauty - Authentication System (FIXED VERSION)
+// A&M Hair and Beauty - Authentication System (CSP-COMPLIANT VERSION)
 // auth.js
 
 // YOUR GOOGLE SHEETS WEB APP URL (Replace this after deploying Google Apps Script)
 const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx527wq0vGwyr2mQ7mGy7LGGny7IamcZB6EOzA2aLeXG_3LW2vBoBXIF3fWX6x-z0QOTA/exec';
 
-// Check if user is already logged in
+// ========================================
+// INITIALIZATION
+// ========================================
+
+// Check if user is already logged in when page loads
 window.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Auth system loading...');
+    
+    // Setup all event listeners
+    setupEventListeners();
+    
+    // Check login status
     checkLoginStatus();
+    
+    // Load theme
     loadTheme();
 });
+
+// Setup all event listeners (CSP-compliant)
+function setupEventListeners() {
+    console.log('🎯 Setting up event listeners...');
+    
+    // Header navigation
+    const headerLogo = document.querySelector('.left');
+    const headerLogoImg = document.querySelector('.logo');
+    const basketHeader = document.getElementById('basket-header');
+    
+    if (headerLogo) {
+        headerLogo.addEventListener('click', () => {
+            window.location.href = 'https://www.amhairandbeauty.com';
+        });
+    }
+    
+    if (headerLogoImg) {
+        headerLogoImg.addEventListener('click', () => {
+            window.location.href = 'https://www.amhairandbeauty.com';
+        });
+    }
+    
+    if (basketHeader) {
+        basketHeader.addEventListener('click', () => {
+            window.location.href = 'https://shop.amhairandbeauty.com/cart/';
+        });
+    }
+    
+    // Form switching
+    const switchToSignupLink = document.getElementById('switch-to-signup');
+    const switchToLoginLink = document.getElementById('switch-to-login');
+    
+    if (switchToSignupLink) {
+        switchToSignupLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchToSignup();
+        });
+    }
+    
+    if (switchToLoginLink) {
+        switchToLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchToLogin();
+        });
+    }
+    
+    // Settings button
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            toggleSettings();
+        });
+    }
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            logout();
+        });
+    }
+    
+    // Continue shopping button
+    const continueShoppingBtn = document.getElementById('continue-shopping-btn');
+    if (continueShoppingBtn) {
+        continueShoppingBtn.addEventListener('click', () => {
+            window.location.href = 'https://www.amhairandbeauty.com';
+        });
+    }
+    
+    // Theme buttons
+    const themeLightBtn = document.getElementById('theme-light-btn');
+    const themeDarkBtn = document.getElementById('theme-dark-btn');
+    
+    if (themeLightBtn) {
+        themeLightBtn.addEventListener('click', () => {
+            setTheme('light');
+        });
+    }
+    
+    if (themeDarkBtn) {
+        themeDarkBtn.addEventListener('click', () => {
+            setTheme('dark');
+        });
+    }
+    
+    // Save settings button
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', () => {
+            saveSettings();
+        });
+    }
+    
+    console.log('✅ Event listeners attached');
+}
+
+// ========================================
+// LOGIN STATUS CHECK
+// ========================================
 
 // Check login status from localStorage
 function checkLoginStatus() {
@@ -29,6 +140,10 @@ function checkLoginStatus() {
     }
 }
 
+// ========================================
+// FORM SWITCHING
+// ========================================
+
 // Switch to signup form
 function switchToSignup() {
     document.getElementById('login-form').style.display = 'none';
@@ -47,6 +162,10 @@ function switchToLogin() {
     hideMessage();
 }
 
+// ========================================
+// MESSAGE HANDLING
+// ========================================
+
 // Show message
 function showMessage(text, type) {
     const messageEl = document.getElementById('auth-message');
@@ -61,6 +180,10 @@ function hideMessage() {
     const messageEl = document.getElementById('auth-message');
     messageEl.style.display = 'none';
 }
+
+// ========================================
+// API COMMUNICATION
+// ========================================
 
 // Make API call to Google Sheets
 async function makeGoogleSheetsRequest(action, data) {
@@ -104,6 +227,10 @@ async function makeGoogleSheetsRequest(action, data) {
         throw error;
     }
 }
+
+// ========================================
+// FORM HANDLERS
+// ========================================
 
 // Login form handler
 document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -218,6 +345,10 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     }
 });
 
+// ========================================
+// USER PROFILE
+// ========================================
+
 // Show user profile
 function showUserProfile(user) {
     console.log('👤 Showing profile for:', user.name);
@@ -258,7 +389,9 @@ function showUserProfile(user) {
     
     // Load user theme preference
     if (user.darkMode !== undefined) {
-        setTheme(user.darkMode ? 'dark' : 'light');
+        const theme = user.darkMode ? 'dark' : 'light';
+        console.log('🎨 Loading user theme preference:', theme);
+        setTheme(theme);
     }
 }
 
@@ -283,6 +416,10 @@ function logout() {
         showMessage('👋 You have been logged out successfully.', 'info');
     }
 }
+
+// ========================================
+// SETTINGS
+// ========================================
 
 // Toggle settings panel
 function toggleSettings() {
@@ -339,29 +476,43 @@ async function saveSettings() {
     
     console.log('💾 Saving settings...');
     
+    // Get the save button
+    const saveBtn = document.getElementById('save-settings-btn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="loading"></span> Saving...';
+    
     try {
         const user = JSON.parse(userData);
         const theme = localStorage.getItem('amTheme');
         const darkMode = theme === 'dark';
+        
+        console.log('📤 Sending settings update:', { email: user.email, darkMode });
         
         const result = await makeGoogleSheetsRequest('UPDATE_SETTINGS', {
             email: user.email,
             darkMode: darkMode
         });
         
+        console.log('📥 Settings update result:', result);
+        
         if (result.success) {
-            // Update local storage
+            // Update local storage with new user data
             user.darkMode = darkMode;
             localStorage.setItem('amUserData', JSON.stringify(user));
             
-            console.log('✅ Settings saved!');
+            console.log('✅ Settings saved successfully!');
             alert('✅ Settings saved successfully!');
         } else {
+            console.error('❌ Save failed:', result.message);
             alert('❌ Failed to save settings: ' + result.message);
         }
     } catch (error) {
         console.error('❌ Save settings error:', error);
         alert('⚠️ Error: ' + error.message);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
     }
 }
 
