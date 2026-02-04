@@ -2,7 +2,7 @@
 // auth.js
 
 // YOUR GOOGLE SHEETS WEB APP URL (Replace this after deploying Google Apps Script)
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx527wq0vGwyr2mQ7mGy7LGGny7IamcZB6EOzA2aLeXG_3LW2vBoBXIF3fWX6x-z0QOTA/exec';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz-CIirIsDp6uvL3Z2FTzsVYc3pHDyJW5-Ln2XSOKA8eEkiwCzM60uc20R53rJN41tO/exec';
 
 // ========================================
 // INITIALIZATION
