@@ -7,21 +7,32 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self' https:;
+        script-src 'self' https://auth.amhairandbeauty.com https://script.google.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://auth.amhairandbeauty.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: https:;
+        connect-src 'self' https://script.google.com https://auth.amhairandbeauty.com;
+        frame-src 'none';
+    ">
 </head>
 <body>
 
 <div id="wrapper">
     <!-- Header matching main site -->
     <div id="header" class="glass">
-        <div class="left" onclick="window.location.href='https://www.amhairandbeauty.com'">
+        <div class="left" id="header-logo">
             <h1>A&M Hair and Beauty</h1>
         </div>
 
-        <div class="logo" onclick="window.location.href='https://www.amhairandbeauty.com'">
+        <div class="logo" id="header-logo-img">
             <img src="A&M.png" alt="A&M Logo">
         </div>
 
-        <div class="right" onclick="window.location.href='https://shop.amhairandbeauty.com/cart/'">
+        <div class="right" id="basket-header">
             <img src="basket.png" alt="Basket">
             <span>Basket</span>
         </div>
@@ -49,7 +60,7 @@
 
                 <p class="switch-form">
                     Don't have an account? 
-                    <a href="#" onclick="switchToSignup(); return false;">Create one</a>
+                    <a href="#" id="switch-to-signup">Create one</a>
                 </p>
             </form>
 
@@ -79,7 +90,7 @@
 
                 <p class="switch-form">
                     Already have an account? 
-                    <a href="#" onclick="switchToLogin(); return false;">Sign in</a>
+                    <a href="#" id="switch-to-login">Sign in</a>
                 </p>
             </form>
 
@@ -93,7 +104,7 @@
         <div class="profile-box glass">
             <div class="profile-header">
                 <h2>Welcome, <span id="user-name-display"></span>!</h2>
-                <button id="settings-btn" onclick="toggleSettings()">⚙️ Settings</button>
+                <button id="settings-btn">⚙️ Settings</button>
             </div>
 
             <div class="profile-info">
@@ -103,10 +114,10 @@
             </div>
 
             <div class="profile-actions">
-                <button class="action-btn" onclick="window.location.href='https://www.amhairandbeauty.com'">
+                <button class="action-btn" id="continue-shopping-btn">
                     🛍️ Continue Shopping
                 </button>
-                <button class="action-btn logout-btn" onclick="logout()">
+                <button class="action-btn logout-btn" id="logout-btn">
                     🚪 Logout
                 </button>
             </div>
@@ -119,16 +130,16 @@
             <div class="setting-item">
                 <label for="theme-toggle">Theme</label>
                 <div class="theme-switch">
-                    <button class="theme-btn" data-theme="light" onclick="setTheme('light')">
+                    <button class="theme-btn" data-theme="light" id="theme-light-btn">
                         ☀️ Light
                     </button>
-                    <button class="theme-btn active" data-theme="dark" onclick="setTheme('dark')">
+                    <button class="theme-btn active" data-theme="dark" id="theme-dark-btn">
                         🌙 Dark
                     </button>
                 </div>
             </div>
 
-            <button class="action-btn" onclick="saveSettings()">
+            <button class="action-btn" id="save-settings-btn">
                 💾 Save Settings
             </button>
         </div>
