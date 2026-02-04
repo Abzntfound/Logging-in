@@ -1,11 +1,12 @@
-// A&M Hair and Beauty - Authentication System
+// A&M Hair and Beauty - Authentication System (FIXED VERSION)
 // auth.js
 
 // YOUR GOOGLE SHEETS WEB APP URL (Replace this after deploying Google Apps Script)
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx43Uj7kYHmmQzNwj_j7tbMnrp9Gd9yDVXD91A3IdSp-3pHsTqhJBtW7PnIaEB616PKaw/exec';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxL9uGhGx2wNblYTypg5FFu2wKbuNWrzeqAkWeC8b2zZu6JGVDyBjNNiV0ljrl3mZlTlA/exec';
 
 // Check if user is already logged in
 window.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Auth system loading...');
     checkLoginStatus();
     loadTheme();
 });
@@ -17,11 +18,14 @@ function checkLoginStatus() {
     if (userData) {
         try {
             const user = JSON.parse(userData);
+            console.log('✅ User already logged in:', user.email);
             showUserProfile(user);
         } catch (e) {
             console.error('Error parsing user data:', e);
             localStorage.removeItem('amUserData');
         }
+    } else {
+        console.log('ℹ️ No user logged in');
     }
 }
 
@@ -49,6 +53,7 @@ function showMessage(text, type) {
     messageEl.textContent = text;
     messageEl.className = type;
     messageEl.style.display = 'block';
+    console.log('📢 Message:', text, '| Type:', type);
 }
 
 // Hide message
@@ -57,12 +62,62 @@ function hideMessage() {
     messageEl.style.display = 'none';
 }
 
+// Make API call to Google Sheets
+async function makeGoogleSheetsRequest(action, data) {
+    console.log('📤 Making request:', action, data);
+    
+    // Check if URL is configured
+    if (GOOGLE_SHEETS_URL === 'YOUR_WEB_APP_URL_HERE') {
+        throw new Error('⚠️ Please configure GOOGLE_SHEETS_URL in auth.js!\n\nFind line 5 and replace YOUR_WEB_APP_URL_HERE with your actual Web App URL from Google Apps Script.');
+    }
+    
+    try {
+        // Build URL with parameters for GET request
+        const params = new URLSearchParams({
+            action: action,
+            data: JSON.stringify(data)
+        });
+        
+        const url = `${GOOGLE_SHEETS_URL}?${params.toString()}`;
+        console.log('🌐 Request URL:', url);
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            redirect: 'follow'
+        });
+        
+        console.log('📥 Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        console.log('📄 Response text:', text);
+        
+        const result = JSON.parse(text);
+        console.log('✅ Parsed result:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('❌ Request failed:', error);
+        throw error;
+    }
+}
+
 // Login form handler
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const email = document.getElementById('login-email').value;
+    const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
+    
+    if (!email || !password) {
+        showMessage('Please fill in all fields', 'error');
+        return;
+    }
+    
+    console.log('🔐 Login attempt for:', email);
     
     // Disable button and show loading
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -71,36 +126,28 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     submitBtn.innerHTML = '<span class="loading"></span> Signing in...';
     
     try {
-        const response = await fetch(GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: JSON.stringify({
-                action: 'LOGIN',
-                email: email,
-                password: password
-            })
+        const result = await makeGoogleSheetsRequest('LOGIN', {
+            email: email,
+            password: password
         });
         
-        const data = await response.json();
-        
-        if (data.success) {
-            showMessage('Login successful! Redirecting...', 'success');
+        if (result.success) {
+            showMessage('✅ Login successful! Welcome back!', 'success');
             
             // Save user data to localStorage
-            localStorage.setItem('amUserData', JSON.stringify(data.user));
+            localStorage.setItem('amUserData', JSON.stringify(result.user));
+            console.log('💾 User data saved to localStorage');
             
             // Wait a moment then show profile
             setTimeout(() => {
-                showUserProfile(data.user);
+                showUserProfile(result.user);
             }, 1000);
         } else {
-            showMessage(data.message || 'Login failed. Please check your credentials.', 'error');
+            showMessage('❌ ' + (result.message || 'Login failed. Please check your credentials.'), 'error');
         }
     } catch (error) {
-        console.error('Login error:', error);
-        showMessage('Network error. Please check your connection and try again.', 'error');
+        console.error('❌ Login error:', error);
+        showMessage('⚠️ ' + error.message, 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
@@ -111,22 +158,28 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm').value;
     
-    // Validate password match
+    // Validate
+    if (!name || !email || !password || !confirmPassword) {
+        showMessage('Please fill in all fields', 'error');
+        return;
+    }
+    
     if (password !== confirmPassword) {
         showMessage('Passwords do not match!', 'error');
         return;
     }
     
-    // Validate password length
     if (password.length < 8) {
-        showMessage('Password must be at least 8 characters long.', 'error');
+        showMessage('Password must be at least 8 characters long', 'error');
         return;
     }
+    
+    console.log('📝 Signup attempt for:', email);
     
     // Disable button and show loading
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -135,23 +188,14 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     submitBtn.innerHTML = '<span class="loading"></span> Creating account...';
     
     try {
-        const response = await fetch(GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: JSON.stringify({
-                action: 'SIGNUP',
-                name: name,
-                email: email,
-                password: password
-            })
+        const result = await makeGoogleSheetsRequest('SIGNUP', {
+            name: name,
+            email: email,
+            password: password
         });
         
-        const data = await response.json();
-        
-        if (data.success) {
-            showMessage('Account created successfully! You can now sign in.', 'success');
+        if (result.success) {
+            showMessage('✅ Account created! You can now sign in.', 'success');
             
             // Clear form
             e.target.reset();
@@ -159,13 +203,15 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
             // Switch to login after 2 seconds
             setTimeout(() => {
                 switchToLogin();
+                // Pre-fill email
+                document.getElementById('login-email').value = email;
             }, 2000);
         } else {
-            showMessage(data.message || 'Signup failed. Please try again.', 'error');
+            showMessage('❌ ' + (result.message || 'Signup failed. Please try again.'), 'error');
         }
     } catch (error) {
-        console.error('Signup error:', error);
-        showMessage('Network error. Please check your connection and try again.', 'error');
+        console.error('❌ Signup error:', error);
+        showMessage('⚠️ ' + error.message, 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
@@ -174,6 +220,8 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 
 // Show user profile
 function showUserProfile(user) {
+    console.log('👤 Showing profile for:', user.name);
+    
     // Hide auth container
     document.getElementById('auth-container').style.display = 'none';
     
@@ -185,22 +233,28 @@ function showUserProfile(user) {
     document.getElementById('user-email-display').textContent = user.email;
     
     // Format dates
-    const createdDate = new Date(user.createdAt);
-    const lastLoginDate = new Date(user.lastLogin);
-    
-    document.getElementById('user-created-display').textContent = createdDate.toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    });
-    
-    document.getElementById('user-login-display').textContent = lastLoginDate.toLocaleString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    try {
+        const createdDate = new Date(user.createdAt);
+        const lastLoginDate = new Date(user.lastLogin);
+        
+        document.getElementById('user-created-display').textContent = createdDate.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+        
+        document.getElementById('user-login-display').textContent = lastLoginDate.toLocaleString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        console.error('Error formatting dates:', e);
+        document.getElementById('user-created-display').textContent = user.createdAt;
+        document.getElementById('user-login-display').textContent = user.lastLogin;
+    }
     
     // Load user theme preference
     if (user.darkMode !== undefined) {
@@ -211,6 +265,7 @@ function showUserProfile(user) {
 // Logout function
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
+        console.log('🚪 Logging out...');
         localStorage.removeItem('amUserData');
         
         // Hide profile
@@ -225,7 +280,7 @@ function logout() {
         document.getElementById('signup-form').reset();
         switchToLogin();
         
-        showMessage('You have been logged out successfully.', 'info');
+        showMessage('👋 You have been logged out successfully.', 'info');
     }
 }
 
@@ -235,14 +290,18 @@ function toggleSettings() {
     
     if (panel.style.display === 'none' || !panel.style.display) {
         panel.style.display = 'block';
+        console.log('⚙️ Settings panel opened');
     } else {
         panel.style.display = 'none';
+        console.log('⚙️ Settings panel closed');
     }
 }
 
 // Set theme
 function setTheme(theme) {
     const html = document.documentElement;
+    
+    console.log('🎨 Setting theme to:', theme);
     
     if (theme === 'dark') {
         html.setAttribute('data-theme', 'dark');
@@ -265,6 +324,7 @@ function setTheme(theme) {
 // Load theme from localStorage
 function loadTheme() {
     const savedTheme = localStorage.getItem('amTheme') || 'light';
+    console.log('🎨 Loading saved theme:', savedTheme);
     setTheme(savedTheme);
 }
 
@@ -273,40 +333,36 @@ async function saveSettings() {
     const userData = localStorage.getItem('amUserData');
     
     if (!userData) {
-        showMessage('You must be logged in to save settings.', 'error');
+        alert('❌ You must be logged in to save settings.');
         return;
     }
+    
+    console.log('💾 Saving settings...');
     
     try {
         const user = JSON.parse(userData);
         const theme = localStorage.getItem('amTheme');
         const darkMode = theme === 'dark';
         
-        const response = await fetch(GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: JSON.stringify({
-                action: 'UPDATE_SETTINGS',
-                email: user.email,
-                darkMode: darkMode
-            })
+        const result = await makeGoogleSheetsRequest('UPDATE_SETTINGS', {
+            email: user.email,
+            darkMode: darkMode
         });
         
-        const data = await response.json();
-        
-        if (data.success) {
+        if (result.success) {
             // Update local storage
             user.darkMode = darkMode;
             localStorage.setItem('amUserData', JSON.stringify(user));
             
-            alert('Settings saved successfully! ✅');
+            console.log('✅ Settings saved!');
+            alert('✅ Settings saved successfully!');
         } else {
-            alert('Failed to save settings. Please try again.');
+            alert('❌ Failed to save settings: ' + result.message);
         }
     } catch (error) {
-        console.error('Save settings error:', error);
-        alert('Network error. Please check your connection.');
+        console.error('❌ Save settings error:', error);
+        alert('⚠️ Error: ' + error.message);
     }
 }
+
+console.log('✅ Auth.js loaded successfully!');
