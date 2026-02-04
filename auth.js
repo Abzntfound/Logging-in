@@ -2,7 +2,7 @@
 // auth.js
 
 // YOUR GOOGLE SHEETS WEB APP URL (Replace this after deploying Google Apps Script)
-const GOOGLE_SHEETS_URL = 'YOUR_WEB_APP_URL_HERE';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx43Uj7kYHmmQzNwj_j7tbMnrp9Gd9yDVXD91A3IdSp-3pHsTqhJBtW7PnIaEB616PKaw/exec';
 
 // Check if user is already logged in
 window.addEventListener('DOMContentLoaded', () => {
