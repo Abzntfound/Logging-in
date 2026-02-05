@@ -1,28 +1,86 @@
-// A&M Hair and Beauty - Authentication System (CSP-COMPLIANT VERSION)
+// A&M Hair and Beauty - Authentication System (WITH COOKIE SHARING)
 // auth.js
 
-// YOUR GOOGLE SHEETS WEB APP URL (Replace this after deploying Google Apps Script)
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx527wq0vGwyr2mQ7mGy7LGGny7IamcZB6EOzA2aLeXG_3LW2vBoBXIF3fWX6x-z0QOTA/exec';
+const GOOGLE_SHEETS_URL = 'https://api.sheetbest.com/sheets/86c37e65-36d8-45a0-8c09-4d7d9ffa072e';
+
+// ========================================
+// COOKIE HELPERS (for cross-subdomain sharing)
+// ========================================
+
+function setCookie(name, value, days) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    // Use .amhairandbeauty.com to share across all subdomains
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; domain=.amhairandbeauty.com; SameSite=Lax`;
+    console.log('🍪 Cookie set:', name);
+}
+
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+        }
+    }
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.amhairandbeauty.com;`;
+    console.log('🍪 Cookie deleted:', name);
+}
+
+// ========================================
+// DATA STORAGE (localStorage + cookies)
+// ========================================
+
+function saveUserData(user) {
+    // Save to localStorage (for this domain)
+    localStorage.setItem('amUserData', JSON.stringify(user));
+    
+    // Save to cookie (for ALL subdomains)
+    setCookie('amUserData', JSON.stringify(user), 30); // 30 days
+    
+    console.log('💾 User data saved to localStorage AND cookie');
+}
+
+function getUserData() {
+    // Try localStorage first
+    let userData = localStorage.getItem('amUserData');
+    
+    // If not found, try cookie
+    if (!userData) {
+        userData = getCookie('amUserData');
+        if (userData) {
+            // Sync back to localStorage
+            localStorage.setItem('amUserData', userData);
+            console.log('📱 User data restored from cookie');
+        }
+    }
+    
+    return userData ? JSON.parse(userData) : null;
+}
+
+function clearUserData() {
+    localStorage.removeItem('amUserData');
+    deleteCookie('amUserData');
+    console.log('🗑️ User data cleared from localStorage AND cookie');
+}
 
 // ========================================
 // INITIALIZATION
 // ========================================
 
-// Check if user is already logged in when page loads
 window.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Auth system loading...');
-    
-    // Setup all event listeners
     setupEventListeners();
-    
-    // Check login status
     checkLoginStatus();
-    
-    // Load theme
     loadTheme();
 });
 
-// Setup all event listeners (CSP-compliant)
 function setupEventListeners() {
     console.log('🎯 Setting up event listeners...');
     
@@ -122,19 +180,12 @@ function setupEventListeners() {
 // LOGIN STATUS CHECK
 // ========================================
 
-// Check login status from localStorage
 function checkLoginStatus() {
-    const userData = localStorage.getItem('amUserData');
+    const user = getUserData();
     
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            console.log('✅ User already logged in:', user.email);
-            showUserProfile(user);
-        } catch (e) {
-            console.error('Error parsing user data:', e);
-            localStorage.removeItem('amUserData');
-        }
+    if (user) {
+        console.log('✅ User already logged in:', user.email);
+        showUserProfile(user);
     } else {
         console.log('ℹ️ No user logged in');
     }
@@ -144,7 +195,6 @@ function checkLoginStatus() {
 // FORM SWITCHING
 // ========================================
 
-// Switch to signup form
 function switchToSignup() {
     document.getElementById('login-form').style.display = 'none';
     document.getElementById('signup-form').style.display = 'flex';
@@ -153,7 +203,6 @@ function switchToSignup() {
     hideMessage();
 }
 
-// Switch to login form
 function switchToLogin() {
     document.getElementById('signup-form').style.display = 'none';
     document.getElementById('login-form').style.display = 'flex';
@@ -166,7 +215,6 @@ function switchToLogin() {
 // MESSAGE HANDLING
 // ========================================
 
-// Show message
 function showMessage(text, type) {
     const messageEl = document.getElementById('auth-message');
     messageEl.textContent = text;
@@ -175,7 +223,6 @@ function showMessage(text, type) {
     console.log('📢 Message:', text, '| Type:', type);
 }
 
-// Hide message
 function hideMessage() {
     const messageEl = document.getElementById('auth-message');
     messageEl.style.display = 'none';
@@ -185,17 +232,10 @@ function hideMessage() {
 // API COMMUNICATION
 // ========================================
 
-// Make API call to Google Sheets
 async function makeGoogleSheetsRequest(action, data) {
     console.log('📤 Making request:', action, data);
     
-    // Check if URL is configured
-    if (GOOGLE_SHEETS_URL === 'YOUR_WEB_APP_URL_HERE') {
-        throw new Error('⚠️ Please configure GOOGLE_SHEETS_URL in auth.js!\n\nFind line 5 and replace YOUR_WEB_APP_URL_HERE with your actual Web App URL from Google Apps Script.');
-    }
-    
     try {
-        // Build URL with parameters for GET request
         const params = new URLSearchParams({
             action: action,
             data: JSON.stringify(data)
@@ -232,7 +272,6 @@ async function makeGoogleSheetsRequest(action, data) {
 // FORM HANDLERS
 // ========================================
 
-// Login form handler
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -246,7 +285,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     
     console.log('🔐 Login attempt for:', email);
     
-    // Disable button and show loading
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
@@ -261,11 +299,9 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         if (result.success) {
             showMessage('✅ Login successful! Welcome back!', 'success');
             
-            // Save user data to localStorage
-            localStorage.setItem('amUserData', JSON.stringify(result.user));
-            console.log('💾 User data saved to localStorage');
+            // Save user data (localStorage + cookie)
+            saveUserData(result.user);
             
-            // Wait a moment then show profile
             setTimeout(() => {
                 showUserProfile(result.user);
             }, 1000);
@@ -281,7 +317,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }
 });
 
-// Signup form handler
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -290,7 +325,6 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm').value;
     
-    // Validate
     if (!name || !email || !password || !confirmPassword) {
         showMessage('Please fill in all fields', 'error');
         return;
@@ -308,7 +342,6 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     
     console.log('📝 Signup attempt for:', email);
     
-    // Disable button and show loading
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
@@ -324,13 +357,10 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
         if (result.success) {
             showMessage('✅ Account created! You can now sign in.', 'success');
             
-            // Clear form
             e.target.reset();
             
-            // Switch to login after 2 seconds
             setTimeout(() => {
                 switchToLogin();
-                // Pre-fill email
                 document.getElementById('login-email').value = email;
             }, 2000);
         } else {
@@ -349,21 +379,15 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
 // USER PROFILE
 // ========================================
 
-// Show user profile
 function showUserProfile(user) {
     console.log('👤 Showing profile for:', user.name);
     
-    // Hide auth container
     document.getElementById('auth-container').style.display = 'none';
-    
-    // Show profile
     document.getElementById('user-profile').style.display = 'block';
     
-    // Populate user data
     document.getElementById('user-name-display').textContent = user.name;
     document.getElementById('user-email-display').textContent = user.email;
     
-    // Format dates
     try {
         const createdDate = new Date(user.createdAt);
         const lastLoginDate = new Date(user.lastLogin);
@@ -387,7 +411,6 @@ function showUserProfile(user) {
         document.getElementById('user-login-display').textContent = user.lastLogin;
     }
     
-    // Load user theme preference
     if (user.darkMode !== undefined) {
         const theme = user.darkMode ? 'dark' : 'light';
         console.log('🎨 Loading user theme preference:', theme);
@@ -395,20 +418,15 @@ function showUserProfile(user) {
     }
 }
 
-// Logout function
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         console.log('🚪 Logging out...');
-        localStorage.removeItem('amUserData');
+        clearUserData();
         
-        // Hide profile
         document.getElementById('user-profile').style.display = 'none';
         document.getElementById('settings-panel').style.display = 'none';
-        
-        // Show auth container
         document.getElementById('auth-container').style.display = 'flex';
         
-        // Reset forms
         document.getElementById('login-form').reset();
         document.getElementById('signup-form').reset();
         switchToLogin();
@@ -421,7 +439,6 @@ function logout() {
 // SETTINGS
 // ========================================
 
-// Toggle settings panel
 function toggleSettings() {
     const panel = document.getElementById('settings-panel');
     
@@ -434,7 +451,6 @@ function toggleSettings() {
     }
 }
 
-// Set theme
 function setTheme(theme) {
     const html = document.documentElement;
     
@@ -443,12 +459,13 @@ function setTheme(theme) {
     if (theme === 'dark') {
         html.setAttribute('data-theme', 'dark');
         localStorage.setItem('amTheme', 'dark');
+        setCookie('amTheme', 'dark', 365);
     } else {
         html.removeAttribute('data-theme');
         localStorage.setItem('amTheme', 'light');
+        setCookie('amTheme', 'light', 365);
     }
     
-    // Update active button
     document.querySelectorAll('.theme-btn').forEach(btn => {
         if (btn.getAttribute('data-theme') === theme) {
             btn.classList.add('active');
@@ -458,32 +475,33 @@ function setTheme(theme) {
     });
 }
 
-// Load theme from localStorage
 function loadTheme() {
-    const savedTheme = localStorage.getItem('amTheme') || 'light';
+    let savedTheme = localStorage.getItem('amTheme');
+    
+    if (!savedTheme) {
+        savedTheme = getCookie('amTheme') || 'light';
+    }
+    
     console.log('🎨 Loading saved theme:', savedTheme);
     setTheme(savedTheme);
 }
 
-// Save settings
 async function saveSettings() {
-    const userData = localStorage.getItem('amUserData');
+    const user = getUserData();
     
-    if (!userData) {
+    if (!user) {
         alert('❌ You must be logged in to save settings.');
         return;
     }
     
     console.log('💾 Saving settings...');
     
-    // Get the save button
     const saveBtn = document.getElementById('save-settings-btn');
     const originalText = saveBtn.textContent;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="loading"></span> Saving...';
     
     try {
-        const user = JSON.parse(userData);
         const theme = localStorage.getItem('amTheme');
         const darkMode = theme === 'dark';
         
@@ -497,9 +515,8 @@ async function saveSettings() {
         console.log('📥 Settings update result:', result);
         
         if (result.success) {
-            // Update local storage with new user data
             user.darkMode = darkMode;
-            localStorage.setItem('amUserData', JSON.stringify(user));
+            saveUserData(user);
             
             console.log('✅ Settings saved successfully!');
             alert('✅ Settings saved successfully!');
