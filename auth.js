@@ -1,7 +1,7 @@
-// A&M Hair and Beauty - Authentication System (WITH COOKIE SHARING)
+// A&M Hair and Beauty - Authentication System (WITH URL REDIRECT)
 // auth.js
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwxf-IKCOeVzbRM6Wne7_7q2gCdH2w1pQs1kw6gZ143TNh5yGv-uFp7-LFNeG90_3MH8A/exec';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx527wq0vGwyr2mQ7mGy7LGGny7IamcZB6EOzA2aLeXG_3LW2vBoBXIF3fWX6x-z0QOTA/exec';
 
 // ========================================
 // COOKIE HELPERS (for cross-subdomain sharing)
@@ -10,9 +10,9 @@ const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwxf-IKCOeVzb
 function setCookie(name, value, days) {
     const expires = new Date();
     expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    // Use .amhairandbeauty.com to share across all subdomains
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; domain=.amhairandbeauty.com; SameSite=Lax`;
-    console.log('🍪 Cookie set:', name);
+    // CRITICAL: Use .amhairandbeauty.com (with leading dot) to share across all subdomains
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; domain=.amhairandbeauty.com; SameSite=Lax; Secure`;
+    console.log('🍪 Cookie set:', name, 'Domain: .amhairandbeauty.com');
 }
 
 function getCookie(name) {
@@ -34,17 +34,27 @@ function deleteCookie(name) {
 }
 
 // ========================================
-// DATA STORAGE (localStorage + cookies)
+// DATA STORAGE (Triple save: localStorage + cookie + sessionStorage)
 // ========================================
 
 function saveUserData(user) {
-    // Save to localStorage (for this domain)
-    localStorage.setItem('amUserData', JSON.stringify(user));
+    console.log('💾 Saving user data with TRIPLE storage...');
     
-    // Save to cookie (for ALL subdomains)
-    setCookie('amUserData', JSON.stringify(user), 30); // 30 days
+    const userJSON = JSON.stringify(user);
     
-    console.log('💾 User data saved to localStorage AND cookie');
+    // 1. Save to localStorage (for auth subdomain)
+    localStorage.setItem('amUserData', userJSON);
+    console.log('✅ Saved to localStorage');
+    
+    // 2. Save to cookie (for ALL subdomains)
+    setCookie('amUserData', userJSON, 30);
+    console.log('✅ Saved to cookie');
+    
+    // 3. Save to sessionStorage (for URL transfer)
+    sessionStorage.setItem('amUserData', userJSON);
+    console.log('✅ Saved to sessionStorage');
+    
+    console.log('💾 User data saved successfully to all 3 storages!');
 }
 
 function getUserData() {
@@ -55,9 +65,16 @@ function getUserData() {
     if (!userData) {
         userData = getCookie('amUserData');
         if (userData) {
-            // Sync back to localStorage
             localStorage.setItem('amUserData', userData);
             console.log('📱 User data restored from cookie');
+        }
+    }
+    
+    // If still not found, try sessionStorage
+    if (!userData) {
+        userData = sessionStorage.getItem('amUserData');
+        if (userData) {
+            console.log('📱 User data restored from sessionStorage');
         }
     }
     
@@ -66,8 +83,9 @@ function getUserData() {
 
 function clearUserData() {
     localStorage.removeItem('amUserData');
+    sessionStorage.removeItem('amUserData');
     deleteCookie('amUserData');
-    console.log('🗑️ User data cleared from localStorage AND cookie');
+    console.log('🗑️ User data cleared from all storages');
 }
 
 // ========================================
@@ -145,6 +163,7 @@ function setupEventListeners() {
     const continueShoppingBtn = document.getElementById('continue-shopping-btn');
     if (continueShoppingBtn) {
         continueShoppingBtn.addEventListener('click', () => {
+            // Redirect to main site (cookie will be available there)
             window.location.href = 'https://www.amhairandbeauty.com';
         });
     }
@@ -297,14 +316,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         });
         
         if (result.success) {
-            showMessage('✅ Login successful! Welcome back!', 'success');
+            showMessage('✅ Login successful! Redirecting...', 'success');
             
-            // Save user data (localStorage + cookie)
+            // CRITICAL: Save user data to ALL storages
             saveUserData(result.user);
             
+            // Show profile briefly, then redirect to main site
             setTimeout(() => {
-                showUserProfile(result.user);
-            }, 1000);
+                console.log('🔄 Redirecting to main site...');
+                window.location.href = 'https://www.amhairandbeauty.com';
+            }, 1500);
         } else {
             showMessage('❌ ' + (result.message || 'Login failed. Please check your credentials.'), 'error');
         }
@@ -515,7 +536,10 @@ async function saveSettings() {
         console.log('📥 Settings update result:', result);
         
         if (result.success) {
+            // Update user object
             user.darkMode = darkMode;
+            
+            // Re-save to all storages with updated darkMode
             saveUserData(user);
             
             console.log('✅ Settings saved successfully!');
