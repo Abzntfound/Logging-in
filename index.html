@@ -7,13 +7,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https:;
         script-src 'self' https://auth.amhairandbeauty.com https://script.google.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://auth.amhairandbeauty.com;
         font-src 'self' https://fonts.gstatic.com;
         img-src 'self' data: https:;
-        connect-src 'self' https://script.google.com https://auth.amhairandbeauty.com;
+        connect-src 'self' https://script.google.com https://script.googleusercontent.com https://auth.amhairandbeauty.com;
         frame-src 'none';
     ">
 </head>
