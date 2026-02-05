@@ -1,7 +1,7 @@
 // A&M Hair and Beauty - Authentication System (WITH URL REDIRECT)
 // auth.js
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx527wq0vGwyr2mQ7mGy7LGGny7IamcZB6EOzA2aLeXG_3LW2vBoBXIF3fWX6x-z0QOTA/exec';
+const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzyQsEQCkZ_UaRF9g_h_w3UHVAM4h8V7mEBy3euBlvOZvvAf2KtB9iF4j_GH8LXy1Iw5A/exec';
 
 // ========================================
 // COOKIE HELPERS (for cross-subdomain sharing)
