@@ -6,8 +6,9 @@
     <link rel="stylesheet" href="https://auth.amhairandbeauty.com/auth-style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self' https:;
@@ -18,134 +19,783 @@
         connect-src 'self' https://script.google.com https://script.googleusercontent.com https://auth.amhairandbeauty.com;
         frame-src 'none';
     ">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', 'Poppins', sans-serif;
+            background: #f0eee9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── Header ── */
+        #header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            background: rgba(255,255,255,0.78);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        #header .left h1 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 28px;
+            color: #1a1a2e;
+            font-weight: 400;
+            cursor: pointer;
+        }
+
+        #header-logo-img img { height: 48px; width: auto; cursor: pointer; }
+
+        #basket-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #555;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        #basket-header img { height: 28px; width: auto; }
+
+        /* ── Main layout ── */
+        #main-layout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex: 1;
+            width: 100%;
+            max-width: 900px;
+            padding: 40px 20px;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* ── Mascot panel ── */
+        #mascot-panel {
+            flex: 1;
+            min-height: 480px;
+            border-radius: 24px 0 0 24px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background: #e8e5f0;
+        }
+
+        #mascot-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 40% 60%, #d6d0f0 0%, #e8e5f0 70%);
+        }
+
+        #mascots-stage {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* ── Auth / Profile panels ── */
+        #auth-container,
+        #user-profile {
+            width: 340px;
+            flex-shrink: 0;
+        }
+
+        .auth-box,
+        .profile-box {
+            background: #fff !important;
+            border-radius: 0 24px 24px 0 !important;
+            padding: 44px 36px 40px !important;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.12) !important;
+            border: none !important;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 26px;
+        }
+        .card-logo .star { font-size: 20px; color: #1a1a2e; }
+        .card-logo span { font-size: 12px; color: #aaa; letter-spacing: 0.06em; }
+
+        #auth-title {
+            font-family: 'DM Serif Display', serif !important;
+            font-size: 28px !important;
+            color: #1a1a2e !important;
+            margin-bottom: 4px !important;
+            font-weight: 400 !important;
+        }
+
+        #auth-subtitle {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 26px;
+        }
+
+        .input-group { margin-bottom: 16px; }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #bbb;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: #f8f7f5 !important;
+            border: 1.5px solid #e0ddd8 !important;
+            border-radius: 10px !important;
+            padding: 11px 14px !important;
+            font-size: 14px !important;
+            font-family: 'DM Sans', sans-serif !important;
+            color: #2d2d2d !important;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus { border-color: #6c5ce7 !important; }
+
+        .auth-button {
+            width: 100%;
+            background: #1a1a2e !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 13px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s !important;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            font-family: 'DM Sans', sans-serif !important;
+        }
+
+        .auth-button:hover { opacity: 0.85; transform: translateY(-1px); }
+
+        .switch-form {
+            text-align: center;
+            font-size: 12.5px;
+            color: #bbb;
+            margin-top: 8px;
+        }
+        .switch-form a { color: #6c5ce7; text-decoration: none; font-weight: 600; }
+
+        #auth-message {
+            font-size: 13px;
+            color: #e17055;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* ── Profile box ── */
+        .profile-top {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* Profile picture */
+        .pfp-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        #pfp-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2.5px solid #e0ddd8;
+            display: block;
+            background: #f8f7f5;
+        }
+
+        .pfp-edit-btn {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #1a1a2e;
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .pfp-edit-btn:hover { background: #6c5ce7; }
+
+        #pfp-input { display: none; }
+
+        .profile-top-text h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 18px;
+            color: #1a1a2e;
+            font-weight: 400;
+            margin-bottom: 2px;
+        }
+
+        .profile-top-text small {
+            font-size: 11px;
+            color: #bbb;
+        }
+
+        #settings-btn {
+            margin-left: auto;
+            background: #f8f7f5;
+            border: 1.5px solid #e0ddd8;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            flex-shrink: 0;
+        }
+
+        .profile-info { margin-bottom: 18px; }
+        .profile-info p { font-size: 12.5px; color: #555; margin-bottom: 5px; }
+        .profile-info strong { color: #bbb; font-weight: 500; }
+
+        .profile-actions { display: flex; flex-direction: column; gap: 0; }
+
+        .action-btn {
+            width: 100%;
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 8px;
+            font-family: 'DM Sans', sans-serif;
+            border: 1.5px solid #e0ddd8;
+            background: #f8f7f5;
+            color: #2d2d2d;
+            transition: background 0.2s;
+        }
+        .action-btn:hover { background: #ece9e4; }
+
+        .logout-btn {
+            background: #fff0ee !important;
+            border-color: #f5c5bc !important;
+            color: #c0392b !important;
+        }
+
+        /* Settings panel */
+        #settings-panel.settings-box {
+            background: #f8f7f5 !important;
+            border-radius: 14px !important;
+            padding: 18px !important;
+            margin-top: 10px;
+            min-height: unset !important;
+            box-shadow: none !important;
+            border: 1.5px solid #e0ddd8 !important;
+        }
+
+        #settings-panel h3 { font-size: 14px; color: #1a1a2e; margin-bottom: 12px; }
+
+        .setting-item label {
+            font-size: 11px;
+            color: #bbb;
+            display: block;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .theme-switch { display: flex; gap: 8px; margin-bottom: 12px; }
+
+        .theme-btn {
+            flex: 1;
+            padding: 7px;
+            border-radius: 8px;
+            border: 1.5px solid #e0ddd8;
+            background: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .theme-btn.active { border-color: #6c5ce7; background: #f0edf9; }
+
+        #save-settings-btn {
+            background: #1a1a2e !important;
+            color: #fff !important;
+            border: none !important;
+        }
+
+        /* ── Mascot animations ── */
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            15%  { transform: translateX(-7px); }
+            30%  { transform: translateX(7px); }
+            45%  { transform: translateX(-7px); }
+            60%  { transform: translateX(7px); }
+            75%  { transform: translateX(-4px); }
+            90%  { transform: translateX(4px); }
+        }
+
+        @keyframes nod {
+            0%,100% { transform: translateY(0); }
+            25%  { transform: translateY(-10px); }
+            50%  { transform: translateY(0); }
+            75%  { transform: translateY(-6px); }
+        }
+
+        .mascot-char { transition: transform 0.3s ease; }
+        .mascot-char.shaking { animation: shake 0.55s ease; }
+        .mascot-char.nodding { animation: nod 0.55s ease; }
+
+        /* ── Responsive ── */
+        @media (max-width: 680px) {
+            #mascot-panel { display: none; }
+            .auth-box, .profile-box { border-radius: 20px !important; }
+            #auth-container, #user-profile { width: 100%; max-width: 400px; }
+            #main-layout { padding: 20px 16px; }
+        }
+    </style>
 </head>
 <body>
 
 <div id="wrapper">
-    <!-- Header matching main site -->
+
+    <!-- Header — identical to original -->
     <div id="header" class="glass">
         <div class="left" id="header-logo">
             <h1>A&M Hair and Beauty</h1>
         </div>
-
         <div class="logo" id="header-logo-img">
             <img src="A&M.png" alt="A&M Logo">
         </div>
-
         <div class="right" id="basket-header">
             <img src="basket.png" alt="Basket">
             <span>Basket</span>
         </div>
     </div>
 
-    <!-- Auth Container -->
-    <div id="auth-container">
-        <div class="auth-box glass">
-            <h2 id="auth-title">Welcome Back!</h2>
-            <p id="auth-subtitle">Sign in to continue shopping</p>
+    <!-- New layout wrapper -->
+    <div id="main-layout">
 
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form">
-                <div class="input-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" required placeholder="your.email@example.com">
-                </div>
+        <!-- Mascot panel -->
+        <div id="mascot-panel">
+            <svg id="mascots-stage" viewBox="0 0 320 420" xmlns="http://www.w3.org/2000/svg">
 
-                <div class="input-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required placeholder="Enter your password">
-                </div>
+                <!-- Purple block -->
+                <g id="char-purple" class="mascot-char">
+                    <rect x="80" y="95" width="92" height="115" rx="12" fill="#6c5ce7"/>
+                    <rect x="72" y="116" width="10" height="24" rx="5" fill="#5a4bd1"/>
+                    <rect x="170" y="116" width="10" height="24" rx="5" fill="#5a4bd1"/>
+                    <circle id="eye-p-l" cx="105" cy="132" r="9" fill="white"/>
+                    <circle id="pupil-p-l" cx="107" cy="133" r="4.5" fill="#2d2d2d"/>
+                    <circle id="eye-p-r" cx="147" cy="132" r="9" fill="white"/>
+                    <circle id="pupil-p-r" cx="149" cy="133" r="4.5" fill="#2d2d2d"/>
+                    <path id="mouth-p" d="M105 165 Q126 174 147 165" stroke="white" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+                </g>
 
-                <button type="submit" class="auth-button">Sign In</button>
+                <!-- Orange semicircle -->
+                <g id="char-orange" class="mascot-char">
+                    <clipPath id="clip-orange">
+                        <rect x="24" y="258" width="148" height="80"/>
+                    </clipPath>
+                    <ellipse cx="98" cy="318" rx="74" ry="72" fill="#e17055" clip-path="url(#clip-orange)"/>
+                    <ellipse cx="98" cy="260" rx="74" ry="12" fill="#c9614a"/>
+                    <circle id="eye-o-l" cx="74" cy="285" r="8" fill="white"/>
+                    <circle id="pupil-o-l" cx="76" cy="286" r="4" fill="#2d2d2d"/>
+                    <circle id="eye-o-r" cx="120" cy="285" r="8" fill="white"/>
+                    <circle id="pupil-o-r" cx="122" cy="286" r="4" fill="#2d2d2d"/>
+                    <path id="mouth-o" d="M82 308 Q97 317 112 308" stroke="white" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+                </g>
 
-                <p class="switch-form">
-                    Don't have an account? 
-                    <a href="#" id="switch-to-signup">Create one</a>
-                </p>
-            </form>
+                <!-- Dark block -->
+                <g id="char-dark" class="mascot-char">
+                    <rect x="178" y="198" width="65" height="84" rx="9" fill="#2d2d2d"/>
+                    <circle id="eye-d-l" cx="196" cy="227" r="5.5" fill="white"/>
+                    <circle id="pupil-d-l" cx="197" cy="228" r="2.8" fill="#111"/>
+                    <circle id="eye-d-r" cx="224" cy="227" r="5.5" fill="white"/>
+                    <circle id="pupil-d-r" cx="225" cy="228" r="2.8" fill="#111"/>
+                    <path id="mouth-d" d="M198 254 Q210 261 222 254" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                </g>
 
-            <!-- Signup Form (hidden initially) -->
-            <form id="signup-form" class="auth-form" style="display: none;">
-                <div class="input-group">
-                    <label for="signup-name">Full Name</label>
-                    <input type="text" id="signup-name" required placeholder="John Doe">
-                </div>
+                <!-- Yellow blob -->
+                <g id="char-yellow" class="mascot-char">
+                    <ellipse cx="224" cy="335" rx="52" ry="60" fill="#fdcb6e"/>
+                    <ellipse cx="224" cy="282" rx="32" ry="16" fill="#e8e5f0"/>
+                    <circle id="eye-y-l" cx="207" cy="312" r="7" fill="white"/>
+                    <circle id="pupil-y-l" cx="208" cy="313" r="3.5" fill="#2d2d2d"/>
+                    <circle id="eye-y-r" cx="240" cy="312" r="7" fill="white"/>
+                    <circle id="pupil-y-r" cx="241" cy="313" r="3.5" fill="#2d2d2d"/>
+                    <path id="mouth-y" d="M210 334 Q223 342 236 334" stroke="#c9a030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                    <ellipse cx="208" cy="390" rx="16" ry="9" fill="#e8b94e"/>
+                    <ellipse cx="240" cy="390" rx="16" ry="9" fill="#e8b94e"/>
+                </g>
 
-                <div class="input-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" required placeholder="your.email@example.com">
-                </div>
-
-                <div class="input-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" required placeholder="Minimum 8 characters">
-                </div>
-
-                <div class="input-group">
-                    <label for="signup-confirm">Confirm Password</label>
-                    <input type="password" id="signup-confirm" required placeholder="Re-enter password">
-                </div>
-
-                <button type="submit" class="auth-button">Create Account</button>
-
-                <p class="switch-form">
-                    Already have an account? 
-                    <a href="#" id="switch-to-login">Sign in</a>
-                </p>
-            </form>
-
-            <!-- Status Message -->
-            <div id="auth-message" style="display: none;"></div>
-        </div>
-    </div>
-
-    <!-- User Profile Section (shown after login) -->
-    <div id="user-profile" style="display: none;">
-        <div class="profile-box glass">
-            <div class="profile-header">
-                <h2>Welcome, <span id="user-name-display"></span>!</h2>
-                <button id="settings-btn">⚙️ Settings</button>
-            </div>
-
-            <div class="profile-info">
-                <p><strong>Email:</strong> <span id="user-email-display"></span></p>
-                <p><strong>Member since:</strong> <span id="user-created-display"></span></p>
-                <p><strong>Last login:</strong> <span id="user-login-display"></span></p>
-            </div>
-
-            <div class="profile-actions">
-                <button class="action-btn" id="continue-shopping-btn">
-                    🛍️ Continue Shopping
-                </button>
-                <button class="action-btn logout-btn" id="logout-btn">
-                    🚪 Logout
-                </button>
-            </div>
+                <ellipse cx="160" cy="408" rx="130" ry="10" fill="rgba(0,0,0,0.05)"/>
+            </svg>
         </div>
 
-        <!-- Settings Panel -->
-        <div id="settings-panel" class="settings-box glass" style="display: none;">
-            <h3>Settings</h3>
-            
-            <div class="setting-item">
-                <label for="theme-toggle">Theme</label>
-                <div class="theme-switch">
-                    <button class="theme-btn" data-theme="light" id="theme-light-btn">
-                        ☀️ Light
-                    </button>
-                    <button class="theme-btn active" data-theme="dark" id="theme-dark-btn">
-                        🌙 Dark
-                    </button>
+        <!-- Auth Container — ALL original IDs/structure preserved exactly -->
+        <div id="auth-container">
+            <div class="auth-box glass">
+                <div class="card-logo">
+                    <span class="star">✦</span>
+                    <span>A&amp;M Hair &amp; Beauty</span>
+                </div>
+
+                <h2 id="auth-title">Welcome Back!</h2>
+                <p id="auth-subtitle">Sign in to continue shopping</p>
+
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="input-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required placeholder="your.email@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="auth-button">Sign In</button>
+                    <p class="switch-form">
+                        Don't have an account?
+                        <a href="#" id="switch-to-signup">Create one</a>
+                    </p>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signup-form" class="auth-form" style="display: none;">
+                    <div class="input-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" required placeholder="John Doe">
+                    </div>
+                    <div class="input-group">
+                        <label for="signup-email">Email</label>
+                        <input type="email" id="signup-email" required placeholder="your.email@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" required placeholder="Minimum 8 characters">
+                    </div>
+                    <div class="input-group">
+                        <label for="signup-confirm">Confirm Password</label>
+                        <input type="password" id="signup-confirm" required placeholder="Re-enter password">
+                    </div>
+                    <button type="submit" class="auth-button">Create Account</button>
+                    <p class="switch-form">
+                        Already have an account?
+                        <a href="#" id="switch-to-login">Sign in</a>
+                    </p>
+                </form>
+
+                <!-- Status Message -->
+                <div id="auth-message" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- User Profile Section — ALL original IDs preserved exactly -->
+        <div id="user-profile" style="display: none;">
+            <div class="profile-box glass">
+                <div class="card-logo">
+                    <span class="star">✦</span>
+                    <span>A&amp;M Hair &amp; Beauty</span>
+                </div>
+
+                <!-- Profile header with picture -->
+                <div class="profile-top">
+                    <div class="pfp-wrapper">
+                        <img id="pfp-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23e8e5f0'/%3E%3Ccircle cx='30' cy='23' r='11' fill='%23bbb'/%3E%3Cellipse cx='30' cy='52' rx='18' ry='14' fill='%23bbb'/%3E%3C/svg%3E" alt="Profile Picture">
+                        <button class="pfp-edit-btn" id="pfp-edit-btn" title="Change photo">✎</button>
+                        <input type="file" id="pfp-input" accept="image/*">
+                    </div>
+                    <div class="profile-top-text">
+                        <h2>Welcome, <span id="user-name-display"></span>!</h2>
+                        <small id="pfp-status">Click ✎ to add a photo</small>
+                    </div>
+                    <button id="settings-btn">⚙️</button>
+                </div>
+
+                <div class="profile-info">
+                    <p><strong>Email:</strong> <span id="user-email-display"></span></p>
+                    <p><strong>Member since:</strong> <span id="user-created-display"></span></p>
+                    <p><strong>Last login:</strong> <span id="user-login-display"></span></p>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="action-btn" id="continue-shopping-btn">🛍️ Continue Shopping</button>
+                    <button class="action-btn logout-btn" id="logout-btn">🚪 Logout</button>
                 </div>
             </div>
 
-            <button class="action-btn" id="save-settings-btn">
-                💾 Save Settings
-            </button>
+            <!-- Settings Panel -->
+            <div id="settings-panel" class="settings-box glass" style="display: none;">
+                <h3>Settings</h3>
+                <div class="setting-item">
+                    <label>Theme</label>
+                    <div class="theme-switch">
+                        <button class="theme-btn" data-theme="light" id="theme-light-btn">☀️ Light</button>
+                        <button class="theme-btn active" data-theme="dark" id="theme-dark-btn">🌙 Dark</button>
+                    </div>
+                </div>
+                <button class="action-btn" id="save-settings-btn">💾 Save Settings</button>
+            </div>
         </div>
-    </div>
-</div>
 
+    </div><!-- /#main-layout -->
+</div><!-- /#wrapper -->
+
+<!-- ── Mascot script ── -->
+<script>
+(function () {
+    var stage = document.getElementById('mascots-stage');
+
+    var eyePairs = [
+        { p: ['pupil-p-l', 'pupil-p-r'], e: ['eye-p-l', 'eye-p-r'] },
+        { p: ['pupil-o-l', 'pupil-o-r'], e: ['eye-o-l', 'eye-o-r'] },
+        { p: ['pupil-d-l', 'pupil-d-r'], e: ['eye-d-l', 'eye-d-r'] },
+        { p: ['pupil-y-l', 'pupil-y-r'], e: ['eye-y-l', 'eye-y-r'] }
+    ];
+
+    var allPupilIds = ['pupil-p-l','pupil-p-r','pupil-o-l','pupil-o-r','pupil-d-l','pupil-d-r','pupil-y-l','pupil-y-r'];
+
+    var mouths = {
+        'mouth-p': { happy: 'M105 165 Q126 174 147 165', sad: 'M105 172 Q126 163 147 172' },
+        'mouth-o': { happy: 'M82 308 Q97 317 112 308',  sad: 'M82 314 Q97 306 112 314'  },
+        'mouth-d': { happy: 'M198 254 Q210 261 222 254', sad: 'M198 259 Q210 252 222 259' },
+        'mouth-y': { happy: 'M210 334 Q223 342 236 334', sad: 'M210 340 Q223 333 236 340' }
+    };
+
+    function setMouths(type) {
+        Object.keys(mouths).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.setAttribute('d', mouths[id][type]);
+        });
+    }
+
+    function triggerEmotion(type) {
+        ['char-purple','char-orange','char-dark','char-yellow'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('shaking','nodding');
+            void el.offsetWidth;
+            if (type === 'shake') el.classList.add('shaking');
+            if (type === 'nod')   el.classList.add('nodding');
+        });
+        setMouths(type === 'nod' ? 'happy' : 'sad');
+        setTimeout(function () { setMouths('happy'); }, 900);
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (!stage) return;
+        var rect = stage.getBoundingClientRect();
+        var mx = (e.clientX - rect.left) * (320 / rect.width);
+        var my = (e.clientY - rect.top)  * (420 / rect.height);
+
+        eyePairs.forEach(function (pair) {
+            for (var i = 0; i < pair.p.length; i++) {
+                var pupilEl = document.getElementById(pair.p[i]);
+                var eyeEl   = document.getElementById(pair.e[i]);
+                if (!pupilEl || !eyeEl) continue;
+                var ex = parseFloat(eyeEl.getAttribute('cx'));
+                var ey = parseFloat(eyeEl.getAttribute('cy'));
+                var eyeR   = parseFloat(eyeEl.getAttribute('r'));
+                var pupilR = parseFloat(pupilEl.getAttribute('r'));
+                var dx = mx - ex, dy = my - ey;
+                var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                var max  = eyeR - pupilR;
+                pupilEl.setAttribute('cx', ex + (dx/dist) * Math.min(dist * 0.3, max));
+                pupilEl.setAttribute('cy', ey + (dy/dist) * Math.min(dist * 0.3, max));
+            }
+        });
+    });
+
+    var pwField = document.getElementById('login-password');
+    if (pwField) {
+        pwField.addEventListener('focus', function () {
+            allPupilIds.forEach(function (pid) {
+                var el = document.getElementById(pid);
+                var eyeEl = document.getElementById(pid.replace('pupil-','eye-'));
+                if (el && eyeEl) el.setAttribute('cy', parseFloat(eyeEl.getAttribute('cy')) - 2.5);
+            });
+        });
+        pwField.addEventListener('blur', function () {
+            allPupilIds.forEach(function (pid) {
+                var el = document.getElementById(pid);
+                var eyeEl = document.getElementById(pid.replace('pupil-','eye-'));
+                if (el && eyeEl) {
+                    el.setAttribute('cx', eyeEl.getAttribute('cx'));
+                    el.setAttribute('cy', eyeEl.getAttribute('cy'));
+                }
+            });
+        });
+    }
+
+    window.mascotEmotion = triggerEmotion;
+
+    var authMsg = document.getElementById('auth-message');
+    if (authMsg) {
+        new MutationObserver(function () {
+            if (authMsg.style.display === 'none' || !authMsg.textContent.trim()) return;
+            var t = authMsg.textContent.toLowerCase();
+            if (/success|welcome|logged.?in|created|verified/.test(t)) triggerEmotion('nod');
+            else if (/error|invalid|incorrect|wrong|fail|exist|not found/.test(t)) triggerEmotion('shake');
+        }).observe(authMsg, { childList:true, subtree:true, attributes:true, characterData:true });
+    }
+
+    var userProfile = document.getElementById('user-profile');
+    if (userProfile) {
+        new MutationObserver(function (mutations) {
+            mutations.forEach(function (m) {
+                if (m.attributeName === 'style' && userProfile.style.display !== 'none') {
+                    triggerEmotion('nod');
+                }
+            });
+        }).observe(userProfile, { attributes: true });
+    }
+
+    var loginForm = document.getElementById('login-form');
+    var authContainer = document.getElementById('auth-container');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function () {
+            setTimeout(function () {
+                if (authContainer && authContainer.style.display !== 'none') {
+                    var msg = document.getElementById('auth-message');
+                    if (msg && msg.style.display !== 'none' && msg.textContent.trim()) {
+                        triggerEmotion('shake');
+                    }
+                }
+            }, 700);
+        });
+    }
+
+    // ── Profile picture handler ──
+    var pfpEditBtn = document.getElementById('pfp-edit-btn');
+    var pfpInput   = document.getElementById('pfp-input');
+    var pfpPreview = document.getElementById('pfp-preview');
+    var pfpStatus  = document.getElementById('pfp-status');
+
+    if (pfpEditBtn && pfpInput) {
+        pfpEditBtn.addEventListener('click', function () {
+            pfpInput.click();
+        });
+
+        pfpInput.addEventListener('change', function (e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            // Max 2MB
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Image too large. Please choose a photo under 2MB.');
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (evt) {
+                var base64 = evt.target.result;
+
+                // Resize to keep storage lean
+                var img = new Image();
+                img.onload = function () {
+                    var canvas = document.createElement('canvas');
+                    var size = 120;
+                    canvas.width = size;
+                    canvas.height = size;
+                    var ctx = canvas.getContext('2d');
+
+                    // Crop to square from centre
+                    var min = Math.min(img.width, img.height);
+                    var sx = (img.width  - min) / 2;
+                    var sy = (img.height - min) / 2;
+                    ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+
+                    var resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                    // Update preview
+                    pfpPreview.src = resizedBase64;
+                    if (pfpStatus) pfpStatus.textContent = 'Photo saved ✓';
+
+                    // Save into user data via auth.js helper if available,
+                    // otherwise write directly to all storages
+                    if (typeof saveUserPfp === 'function') {
+                        saveUserPfp(resizedBase64);
+                    } else {
+                        // Fallback: update amUserData in all storages
+                        try {
+                            var raw = localStorage.getItem('amUserData');
+                            if (raw) {
+                                var u = JSON.parse(raw);
+                                u.pfp = resizedBase64;
+                                var json = JSON.stringify(u);
+                                localStorage.setItem('amUserData', json);
+                                sessionStorage.setItem('amUserData', json);
+                                // Update cookie (30 days, cross-subdomain)
+                                var exp = new Date();
+                                exp.setTime(exp.getTime() + 30*24*60*60*1000);
+                                document.cookie = 'amUserData=' + encodeURIComponent(json) +
+                                    '; expires=' + exp.toUTCString() +
+                                    '; path=/; domain=.amhairandbeauty.com; SameSite=Lax; Secure';
+                                console.log('✅ PFP saved to all storages');
+                            }
+                        } catch (err) {
+                            console.error('PFP save error:', err);
+                        }
+                    }
+                };
+                img.src = base64;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Load pfp when profile becomes visible
+    if (userProfile) {
+        new MutationObserver(function () {
+            if (userProfile.style.display === 'none') return;
+            try {
+                var raw = localStorage.getItem('amUserData');
+                if (raw) {
+                    var u = JSON.parse(raw);
+                    if (u.pfp && pfpPreview) {
+                        pfpPreview.src = u.pfp;
+                        if (pfpStatus) pfpStatus.textContent = 'Photo saved ✓';
+                    }
+                }
+            } catch(e) {}
+        }).observe(userProfile, { attributes: true });
+    }
+
+})();
+</script>
+
+<!-- Original auth script — untouched, loaded last -->
 <script src="https://auth.amhairandbeauty.com/auth.js"></script>
 </body>
 </html>
