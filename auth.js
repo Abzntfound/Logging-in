@@ -1,4 +1,4 @@
-// A&M Hair and Beauty - Authentication System (WITH URL REDIRECT)
+// A&M Hair and Beauty - Authentication System (WITH URL REDIRECT + PROFILE PICTURE)
 // auth.js
 
 const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzyQsEQCkZ_UaRF9g_h_w3UHVAM4h8V7mEBy3euBlvOZvvAf2KtB9iF4j_GH8LXy1Iw5A/exec';
@@ -10,7 +10,6 @@ const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzyQsEQCkZ_Ua
 function setCookie(name, value, days) {
     const expires = new Date();
     expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    // CRITICAL: Use .amhairandbeauty.com (with leading dot) to share across all subdomains
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; domain=.amhairandbeauty.com; SameSite=Lax; Secure`;
     console.log('🍪 Cookie set:', name, 'Domain: .amhairandbeauty.com');
 }
@@ -42,15 +41,12 @@ function saveUserData(user) {
     
     const userJSON = JSON.stringify(user);
     
-    // 1. Save to localStorage (for auth subdomain)
     localStorage.setItem('amUserData', userJSON);
     console.log('✅ Saved to localStorage');
     
-    // 2. Save to cookie (for ALL subdomains)
     setCookie('amUserData', userJSON, 30);
     console.log('✅ Saved to cookie');
     
-    // 3. Save to sessionStorage (for URL transfer)
     sessionStorage.setItem('amUserData', userJSON);
     console.log('✅ Saved to sessionStorage');
     
@@ -58,10 +54,8 @@ function saveUserData(user) {
 }
 
 function getUserData() {
-    // Try localStorage first
     let userData = localStorage.getItem('amUserData');
     
-    // If not found, try cookie
     if (!userData) {
         userData = getCookie('amUserData');
         if (userData) {
@@ -70,7 +64,6 @@ function getUserData() {
         }
     }
     
-    // If still not found, try sessionStorage
     if (!userData) {
         userData = sessionStorage.getItem('amUserData');
         if (userData) {
@@ -89,6 +82,22 @@ function clearUserData() {
 }
 
 // ========================================
+// PROFILE PICTURE — saves pfp into user data across all storages
+// Called from index.html after the user picks a photo
+// ========================================
+
+function saveUserPfp(base64String) {
+    const user = getUserData();
+    if (!user) {
+        console.warn('⚠️ saveUserPfp: no user logged in');
+        return;
+    }
+    user.pfp = base64String;
+    saveUserData(user);
+    console.log('🖼️ Profile picture saved and synced to all storages (including .amhairandbeauty.com cookie)');
+}
+
+// ========================================
 // INITIALIZATION
 // ========================================
 
@@ -102,7 +111,6 @@ window.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     console.log('🎯 Setting up event listeners...');
     
-    // Header navigation
     const headerLogo = document.querySelector('.left');
     const headerLogoImg = document.querySelector('.logo');
     const basketHeader = document.getElementById('basket-header');
@@ -125,7 +133,6 @@ function setupEventListeners() {
         });
     }
     
-    // Form switching
     const switchToSignupLink = document.getElementById('switch-to-signup');
     const switchToLoginLink = document.getElementById('switch-to-login');
     
@@ -143,7 +150,6 @@ function setupEventListeners() {
         });
     }
     
-    // Settings button
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
@@ -151,7 +157,6 @@ function setupEventListeners() {
         });
     }
     
-    // Logout button
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
@@ -159,16 +164,13 @@ function setupEventListeners() {
         });
     }
     
-    // Continue shopping button
     const continueShoppingBtn = document.getElementById('continue-shopping-btn');
     if (continueShoppingBtn) {
         continueShoppingBtn.addEventListener('click', () => {
-            // Redirect to main site (cookie will be available there)
             window.location.href = 'https://www.amhairandbeauty.com';
         });
     }
     
-    // Theme buttons
     const themeLightBtn = document.getElementById('theme-light-btn');
     const themeDarkBtn = document.getElementById('theme-dark-btn');
     
@@ -184,7 +186,6 @@ function setupEventListeners() {
         });
     }
     
-    // Save settings button
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener('click', () => {
@@ -318,10 +319,14 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         if (result.success) {
             showMessage('✅ Login successful! Redirecting...', 'success');
             
-            // CRITICAL: Save user data to ALL storages
+            // Preserve any existing pfp when logging in
+            const existingUser = getUserData();
+            if (existingUser && existingUser.pfp && !result.user.pfp) {
+                result.user.pfp = existingUser.pfp;
+            }
+
             saveUserData(result.user);
             
-            // Show profile briefly, then redirect to main site
             setTimeout(() => {
                 console.log('🔄 Redirecting to main site...');
                 window.location.href = 'https://www.amhairandbeauty.com';
@@ -432,6 +437,15 @@ function showUserProfile(user) {
         document.getElementById('user-login-display').textContent = user.lastLogin;
     }
     
+    // Load profile picture if saved
+    if (user.pfp) {
+        const pfpPreview = document.getElementById('pfp-preview');
+        const pfpStatus  = document.getElementById('pfp-status');
+        if (pfpPreview) pfpPreview.src = user.pfp;
+        if (pfpStatus)  pfpStatus.textContent = 'Photo saved ✓';
+        console.log('🖼️ Profile picture loaded');
+    }
+    
     if (user.darkMode !== undefined) {
         const theme = user.darkMode ? 'dark' : 'light';
         console.log('🎨 Loading user theme preference:', theme);
@@ -536,10 +550,7 @@ async function saveSettings() {
         console.log('📥 Settings update result:', result);
         
         if (result.success) {
-            // Update user object
             user.darkMode = darkMode;
-            
-            // Re-save to all storages with updated darkMode
             saveUserData(user);
             
             console.log('✅ Settings saved successfully!');
