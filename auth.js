@@ -1,64 +1,49 @@
-/* ================================
-   A&M AUTH.JS — FIXED VERSION
-================================ */
+// A&M Hair & Beauty — AUTH FIXED (NON MODULE SAFE)
 
 const supabase = window.supabaseClient;
 
 if (!supabase) {
-    console.error("❌ Supabase not found. Check index.html init.");
+    console.error("Supabase not loaded!");
 }
 
-/* ================================
-   STORAGE
-================================ */
+/* =========================
+   HELPERS
+========================= */
 
-function saveUserData(user, profile = null) {
-    const data = {
+function getUserData() {
+    return JSON.parse(localStorage.getItem("amUserData") || "null");
+}
+
+function saveUserData(user, profile) {
+    localStorage.setItem("amUserData", JSON.stringify({
         id: user.id,
         email: user.email,
-        name: profile?.name || user.user_metadata?.name || "",
-        role: profile?.role || "user",
-        pfp: profile?.pfp || null,
-        darkMode: profile?.dark_mode || false
-    };
-
-    localStorage.setItem("amUserData", JSON.stringify(data));
-    sessionStorage.setItem("amUserData", JSON.stringify(data));
+        name: profile?.name || ""
+    }));
 }
 
-function clearUserData() {
-    localStorage.removeItem("amUserData");
-    sessionStorage.removeItem("amUserData");
-}
-
-/* ================================
-   SUPABASE CALLS
-================================ */
+/* =========================
+   CORE
+========================= */
 
 async function getUser() {
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error) {
-        console.error(error);
-        return null;
-    }
-
+    const { data } = await supabase.auth.getUser();
     return data?.user || null;
 }
 
-async function getProfile(userId) {
+async function getProfile(id) {
     const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("id", id)
         .single();
 
     return data || null;
 }
 
-/* ================================
-   AUTH ACTIONS
-================================ */
+/* =========================
+   LOGIN
+========================= */
 
 async function login(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -66,124 +51,101 @@ async function login(email, password) {
         password
     });
 
-    if (error) throw error;
-
-    const user = data.user;
-    const profile = await getProfile(user.id);
-
-    saveUserData(user, profile);
-    showProfileUI(user, profile);
-
-    return data;
-}
-
-async function signup(name, email, password) {
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: { name }
-        }
-    });
-
-    if (error) throw error;
-
-    return data;
-}
-
-async function logout() {
-    await supabase.auth.signOut();
-    clearUserData();
-    location.reload();
-}
-
-/* ================================
-   UI HANDLING
-================================ */
-
-function showProfileUI(user, profile) {
-    const auth = document.getElementById("auth-container");
-    const profileBox = document.getElementById("user-profile");
-
-    if (auth) auth.style.display = "none";
-    if (profileBox) profileBox.style.display = "block";
-
-    const nameEl = document.getElementById("user-name-display");
-    const emailEl = document.getElementById("user-email-display");
-    const createdEl = document.getElementById("user-created-display");
-
-    if (nameEl) nameEl.textContent = profile?.name || user.email;
-    if (emailEl) emailEl.textContent = user.email;
-    if (createdEl && user.created_at) {
-        createdEl.textContent = new Date(user.created_at).toLocaleDateString();
-    }
-}
-
-function showAuthUI() {
-    const auth = document.getElementById("auth-container");
-    const profileBox = document.getElementById("user-profile");
-
-    if (auth) auth.style.display = "block";
-    if (profileBox) profileBox.style.display = "none";
-}
-
-/* ================================
-   SESSION CHECK
-================================ */
-
-async function checkLoginStatus() {
-    const user = await getUser();
-
-    if (!user) {
-        showAuthUI();
+    if (error) {
+        showMessage(error.message, "error");
         return;
     }
 
-    const profile = await getProfile(user.id);
+    const profile = await getProfile(data.user.id);
+    saveUserData(data.user, profile);
 
-    saveUserData(user, profile);
-    showProfileUI(user, profile);
+    showProfile(data.user, profile);
 }
 
-/* ================================
+/* =========================
+   SIGNUP
+========================= */
+
+async function signup(name, email, password) {
+    const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } }
+    });
+
+    if (error) return showMessage(error.message, "error");
+
+    showMessage("Check your email to confirm account", "success");
+}
+
+/* =========================
+   UI
+========================= */
+
+function showProfile(user, profile) {
+    document.getElementById("auth-container").style.display = "none";
+    document.getElementById("user-profile").style.display = "block";
+
+    document.getElementById("user-name-display").innerText =
+        profile?.name || user.email;
+
+    document.getElementById("user-email-display").innerText =
+        user.email;
+}
+
+function showAuth() {
+    document.getElementById("auth-container").style.display = "block";
+    document.getElementById("user-profile").style.display = "none";
+}
+
+/* =========================
+   MESSAGE
+========================= */
+
+function showMessage(text, type) {
+    const el = document.getElementById("auth-message");
+    if (!el) return;
+
+    el.innerText = text;
+    el.style.display = "block";
+    el.style.color = type === "error" ? "red" : "green";
+}
+
+/* =========================
    EVENTS
-================================ */
+========================= */
 
-window.addEventListener("DOMContentLoaded", () => {
-    checkLoginStatus();
+window.addEventListener("DOMContentLoaded", async () => {
 
-    const loginForm = document.getElementById("login-form");
-    const signupForm = document.getElementById("signup-form");
-
-    loginForm?.addEventListener("submit", async (e) => {
+    document.getElementById("login-form")?.addEventListener("submit", e => {
         e.preventDefault();
-
-        const email = document.getElementById("login-email").value;
-        const password = document.getElementById("login-password").value;
-
-        try {
-            await login(email, password);
-        } catch (err) {
-            alert(err.message);
-        }
+        login(
+            document.getElementById("login-email").value,
+            document.getElementById("login-password").value
+        );
     });
 
-    signupForm?.addEventListener("submit", async (e) => {
+    document.getElementById("signup-form")?.addEventListener("submit", e => {
         e.preventDefault();
-
-        const name = document.getElementById("signup-name").value;
-        const email = document.getElementById("signup-email").value;
-        const password = document.getElementById("signup-password").value;
-
-        try {
-            await signup(name, email, password);
-            alert("Check your email to confirm account");
-        } catch (err) {
-            alert(err.message);
-        }
+        signup(
+            document.getElementById("signup-name").value,
+            document.getElementById("signup-email").value,
+            document.getElementById("signup-password").value
+        );
     });
 
-    document.getElementById("logout-btn")?.addEventListener("click", logout);
+    document.getElementById("logout-btn")?.addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        location.reload();
+    });
+
+    const user = await getUser();
+    if (user) {
+        const profile = await getProfile(user.id);
+        showProfile(user, profile);
+    } else {
+        showAuth();
+    }
 });
 
-console.log("✅ auth.js loaded safely");
+console.log("AUTH FIXED ✔");
