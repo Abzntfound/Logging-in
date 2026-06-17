@@ -564,14 +564,21 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* ================================
-   SUPABASE INIT
-================================ */
+/*
+    ✅ ONLY SUPABASE INITIALISATION IN ENTIRE PROJECT
+    DO NOT REPEAT THIS ANYWHERE ELSE
+*/
+
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+</script>
 
+<script>
 /* ================================
    GLOBAL USER STATE
 ================================ */
