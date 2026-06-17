@@ -574,227 +574,207 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- ── Mascot script ── -->
-<script nonce="A2Fc45">
-(function () {
-    var stage = document.getElementById('mascots-stage');
+<script>
+/* ================================
+   SUPABASE INIT
+================================ */
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-    var eyePairs = [
-        { p: ['pupil-p-l', 'pupil-p-r'], e: ['eye-p-l', 'eye-p-r'] },
-        { p: ['pupil-o-l', 'pupil-o-r'], e: ['eye-o-l', 'eye-o-r'] },
-        { p: ['pupil-d-l', 'pupil-d-r'], e: ['eye-d-l', 'eye-d-r'] },
-        { p: ['pupil-y-l', 'pupil-y-r'], e: ['eye-y-l', 'eye-y-r'] }
-    ];
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    var allPupilIds = ['pupil-p-l','pupil-p-r','pupil-o-l','pupil-o-r','pupil-d-l','pupil-d-r','pupil-y-l','pupil-y-r'];
+/* ================================
+   GLOBAL USER STATE
+================================ */
+let currentUser = null;
 
-    var mouths = {
-        'mouth-p': { happy: 'M105 165 Q126 174 147 165', sad: 'M105 172 Q126 163 147 172' },
-        'mouth-o': { happy: 'M82 308 Q97 317 112 308',  sad: 'M82 314 Q97 306 112 314'  },
-        'mouth-d': { happy: 'M198 254 Q210 261 222 254', sad: 'M198 259 Q210 252 222 259' },
-        'mouth-y': { happy: 'M210 334 Q223 342 236 334', sad: 'M210 340 Q223 333 236 340' }
+/* ================================
+   AUTH CHECK
+================================ */
+async function loadUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        showAuth();
+        return;
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    currentUser = {
+        ...user,
+        ...profile
     };
 
-    function setMouths(type) {
-        Object.keys(mouths).forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) el.setAttribute('d', mouths[id][type]);
-        });
+    if (profile?.role === "admin") {
+        enableAdminMode();
     }
 
-    function triggerEmotion(type) {
-        ['char-purple','char-orange','char-dark','char-yellow'].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (!el) return;
-            el.classList.remove('shaking','nodding');
-            void el.offsetWidth;
-            if (type === 'shake') el.classList.add('shaking');
-            if (type === 'nod')   el.classList.add('nodding');
-        });
-        setMouths(type === 'nod' ? 'happy' : 'sad');
-        setTimeout(function () { setMouths('happy'); }, 900);
-    }
+    showProfile(currentUser);
+    loadBasket();
+}
 
-    document.addEventListener('mousemove', function (e) {
-        if (!stage) return;
-        var rect = stage.getBoundingClientRect();
-        var mx = (e.clientX - rect.left) * (320 / rect.width);
-        var my = (e.clientY - rect.top)  * (420 / rect.height);
-
-        eyePairs.forEach(function (pair) {
-            for (var i = 0; i < pair.p.length; i++) {
-                var pupilEl = document.getElementById(pair.p[i]);
-                var eyeEl   = document.getElementById(pair.e[i]);
-                if (!pupilEl || !eyeEl) continue;
-                var ex = parseFloat(eyeEl.getAttribute('cx'));
-                var ey = parseFloat(eyeEl.getAttribute('cy'));
-                var eyeR   = parseFloat(eyeEl.getAttribute('r'));
-                var pupilR = parseFloat(pupilEl.getAttribute('r'));
-                var dx = mx - ex, dy = my - ey;
-                var dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                var max  = eyeR - pupilR;
-                pupilEl.setAttribute('cx', ex + (dx/dist) * Math.min(dist * 0.3, max));
-                pupilEl.setAttribute('cy', ey + (dy/dist) * Math.min(dist * 0.3, max));
-            }
-        });
+/* ================================
+   LOGIN
+================================ */
+async function login(email, password) {
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
     });
 
-    var pwField = document.getElementById('login-password');
-    if (pwField) {
-        pwField.addEventListener('focus', function () {
-            allPupilIds.forEach(function (pid) {
-                var el = document.getElementById(pid);
-                var eyeEl = document.getElementById(pid.replace('pupil-','eye-'));
-                if (el && eyeEl) el.setAttribute('cy', parseFloat(eyeEl.getAttribute('cy')) - 2.5);
-            });
-        });
-        pwField.addEventListener('blur', function () {
-            allPupilIds.forEach(function (pid) {
-                var el = document.getElementById(pid);
-                var eyeEl = document.getElementById(pid.replace('pupil-','eye-'));
-                if (el && eyeEl) {
-                    el.setAttribute('cx', eyeEl.getAttribute('cx'));
-                    el.setAttribute('cy', eyeEl.getAttribute('cy'));
-                }
-            });
-        });
-    }
+    if (error) return alert(error.message);
 
-    window.mascotEmotion = triggerEmotion;
+    await loadUser();
+}
 
-    var authMsg = document.getElementById('auth-message');
-    if (authMsg) {
-        new MutationObserver(function () {
-            if (authMsg.style.display === 'none' || !authMsg.textContent.trim()) return;
-            var t = authMsg.textContent.toLowerCase();
-            if (/success|welcome|logged.?in|created|verified/.test(t)) triggerEmotion('nod');
-            else if (/error|invalid|incorrect|wrong|fail|exist|not found/.test(t)) triggerEmotion('shake');
-        }).observe(authMsg, { childList:true, subtree:true, attributes:true, characterData:true });
-    }
+/* ================================
+   SIGNUP
+================================ */
+async function signup(email, password) {
+    const { error } = await supabase.auth.signUp({
+        email,
+        password
+    });
 
-    var userProfile = document.getElementById('user-profile');
-    if (userProfile) {
-        new MutationObserver(function (mutations) {
-            mutations.forEach(function (m) {
-                if (m.attributeName === 'style' && userProfile.style.display !== 'none') {
-                    triggerEmotion('nod');
-                }
-            });
-        }).observe(userProfile, { attributes: true });
-    }
+    if (error) return alert(error.message);
 
-    var loginForm = document.getElementById('login-form');
-    var authContainer = document.getElementById('auth-container');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function () {
-            setTimeout(function () {
-                if (authContainer && authContainer.style.display !== 'none') {
-                    var msg = document.getElementById('auth-message');
-                    if (msg && msg.style.display !== 'none' && msg.textContent.trim()) {
-                        triggerEmotion('shake');
-                    }
-                }
-            }, 700);
-        });
-    }
+    alert("Check your email to confirm account");
+}
 
-    // ── Profile picture handler ──
-    var pfpEditBtn = document.getElementById('pfp-edit-btn');
-    var pfpInput   = document.getElementById('pfp-input');
-    var pfpPreview = document.getElementById('pfp-preview');
-    var pfpStatus  = document.getElementById('pfp-status');
+/* ================================
+   LOGOUT
+================================ */
+async function logout() {
+    await supabase.auth.signOut();
+    location.reload();
+}
 
-    if (pfpEditBtn && pfpInput) {
-        pfpEditBtn.addEventListener('click', function () {
-            pfpInput.click();
-        });
+/* ================================
+   ADMIN PROTECTION
+================================ */
+function enableAdminMode() {
+    console.log("ADMIN MODE ENABLED");
 
-        pfpInput.addEventListener('change', function (e) {
-            var file = e.target.files[0];
-            if (!file) return;
+    let adminBtn = document.createElement("button");
+    adminBtn.innerText = "Admin Dashboard";
+    adminBtn.style.cssText = "margin-left:10px;padding:6px 10px";
 
-            // Max 2MB
-            if (file.size > 2 * 1024 * 1024) {
-                alert('Image too large. Please choose a photo under 2MB.');
-                return;
-            }
+    adminBtn.onclick = () => {
+        showAdminDashboard();
+    };
 
-            var reader = new FileReader();
-            reader.onload = function (evt) {
-                var base64 = evt.target.result;
+    document.querySelector("#header").appendChild(adminBtn);
+}
 
-                // Resize to keep storage lean
-                var img = new Image();
-                img.onload = function () {
-                    var canvas = document.createElement('canvas');
-                    var size = 120;
-                    canvas.width = size;
-                    canvas.height = size;
-                    var ctx = canvas.getContext('2d');
+/* ================================
+   ADMIN DASHBOARD
+================================ */
+function showAdminDashboard() {
+    const panel = document.createElement("div");
+    panel.id = "admin-panel";
+    panel.style = `
+        position:fixed;
+        top:80px;
+        right:20px;
+        width:320px;
+        background:#fff;
+        border:1px solid #ddd;
+        padding:20px;
+        z-index:9999;
+    `;
 
-                    // Crop to square from centre
-                    var min = Math.min(img.width, img.height);
-                    var sx = (img.width  - min) / 2;
-                    var sy = (img.height - min) / 2;
-                    ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+    panel.innerHTML = `
+        <h3>Admin Dashboard</h3>
+        <button onclick="loadUsers()">Load Users</button>
+        <div id="admin-users"></div>
+        <button onclick="document.getElementById('admin-panel').remove()">Close</button>
+    `;
 
-                    var resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+    document.body.appendChild(panel);
+}
 
-                    // Update preview
-                    pfpPreview.src = resizedBase64;
-                    if (pfpStatus) pfpStatus.textContent = 'Photo saved ✓';
+async function loadUsers() {
+    const { data } = await supabase.from("profiles").select("*");
 
-                    // Save into user data via auth.js helper if available,
-                    // otherwise write directly to all storages
-                    if (typeof saveUserPfp === 'function') {
-                        saveUserPfp(resizedBase64);
-                    } else {
-                        // Fallback: update amUserData in all storages
-                        try {
-                            var raw = localStorage.getItem('amUserData');
-                            if (raw) {
-                                var u = JSON.parse(raw);
-                                u.pfp = resizedBase64;
-                                var json = JSON.stringify(u);
-                                localStorage.setItem('amUserData', json);
-                                sessionStorage.setItem('amUserData', json);
-                                // Update cookie (30 days, cross-subdomain)
-                                var exp = new Date();
-                                exp.setTime(exp.getTime() + 30*24*60*60*1000);
-                                document.cookie = 'amUserData=' + encodeURIComponent(json) +
-                                    '; expires=' + exp.toUTCString() +
-                                    '; path=/; domain=.amhairandbeauty.com; SameSite=Lax; Secure';
-                                console.log('✅ PFP saved to all storages');
-                            }
-                        } catch (err) {
-                            console.error('PFP save error:', err);
-                        }
-                    }
-                };
-                img.src = base64;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
+    document.getElementById("admin-users").innerHTML =
+        data.map(u => `
+            <div style="padding:5px;border-bottom:1px solid #eee">
+                ${u.email} - ${u.role}
+            </div>
+        `).join("");
+}
 
-    // Load pfp when profile becomes visible
-    if (userProfile) {
-        new MutationObserver(function () {
-            if (userProfile.style.display === 'none') return;
-            try {
-                var raw = localStorage.getItem('amUserData');
-                if (raw) {
-                    var u = JSON.parse(raw);
-                    if (u.pfp && pfpPreview) {
-                        pfpPreview.src = u.pfp;
-                        if (pfpStatus) pfpStatus.textContent = 'Photo saved ✓';
-                    }
-                }
-            } catch(e) {}
-        }).observe(userProfile, { attributes: true });
-    }
+/* ================================
+   BASKET SYNC (PER USER FIX)
+================================ */
+function getBasketKey() {
+    return `basket_${currentUser?.id}`;
+}
 
-})();
+function getBasket() {
+    return JSON.parse(localStorage.getItem(getBasketKey()) || "[]");
+}
+
+function saveBasket(items) {
+    localStorage.setItem(getBasketKey(), JSON.stringify(items));
+}
+
+/* FIXED: no more global basket */
+function addToBasket(item) {
+    let basket = getBasket();
+
+    const existing = basket.find(i => i.id === item.id);
+
+    if (existing) existing.qty++;
+    else basket.push({ ...item, qty: 1 });
+
+    saveBasket(basket);
+}
+
+/* ================================
+   UI SWITCHING FIXES
+================================ */
+function showProfile(user) {
+    document.getElementById("auth-container").style.display = "none";
+    document.getElementById("user-profile").style.display = "block";
+
+    document.getElementById("user-email-display").innerText = user.email;
+}
+
+function showAuth() {
+    document.getElementById("auth-container").style.display = "block";
+    document.getElementById("user-profile").style.display = "none";
+}
+
+/* ================================
+   EVENT HOOKS (FIXED)
+================================ */
+window.addEventListener("DOMContentLoaded", () => {
+    loadUser();
+
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        login(
+            document.getElementById("login-email").value,
+            document.getElementById("login-password").value
+        );
+    });
+
+    document.getElementById("signup-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        signup(
+            document.getElementById("signup-email").value,
+            document.getElementById("signup-password").value
+        );
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", logout);
+});
 </script>
 
 <!-- Original auth script — untouched, loaded last -->
