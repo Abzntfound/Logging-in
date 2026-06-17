@@ -1,4 +1,4 @@
-// A&M Hair & Beauty — Supabase Auth System (CLEAN VERSION)
+// A&M Hair & Beauty — Supabase Auth System (CLEAN VERSION
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
