@@ -2,7 +2,7 @@
 // A&M HAIR & BEAUTY — CLEAN AUTH SYSTEM (FULL REWRITE)
 // ======================================================
 
-// ===================== SUPABASE INIT =====================
+// ===================== SUPABASE INIT ====================
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
 const SUPABASE_KEY = "YOUR_SUPABASE_KEY";
 
