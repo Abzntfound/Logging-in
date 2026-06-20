@@ -46,49 +46,61 @@ async function getProfile(userId) {
 
 // ===================== LOGIN =====================
 async function login(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-    });
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
 
-    if (error) {
-        showMessage(error.message, "error");
+        if (error) {
+            showMessage(error.message, "error");
+            window.mascotShake?.();
+            return;
+        }
+
+        const profile = await getProfile(data.user.id);
+
+        currentUser = {
+            ...data.user,
+            profile
+        };
+
+        saveLocalUser(currentUser);
+
+        showMessage("Login successful!", "success");
+        window.mascotNod?.();
+
+        showProfile(currentUser);
+    } catch (err) {
+        console.error("Login threw an exception:", err);
+        showMessage("Something went wrong logging in. Check console for details.", "error");
         window.mascotShake?.();
-        return;
     }
-
-    const profile = await getProfile(data.user.id);
-
-    currentUser = {
-        ...data.user,
-        profile
-    };
-
-    saveLocalUser(currentUser);
-
-    showMessage("Login successful!", "success");
-    window.mascotNod?.();
-
-    showProfile(currentUser);
 }
 
 // ===================== SIGNUP =====================
 async function signup(name, email, password) {
-    const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: { name }
+    try {
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { name }
+            }
+        });
+
+        if (error) {
+            showMessage(error.message, "error");
+            window.mascotShake?.();
+            return;
         }
-    });
 
-    if (error) {
-        showMessage(error.message, "error");
+        showMessage("Check your email to confirm account", "success");
+    } catch (err) {
+        console.error("Signup threw an exception:", err);
+        showMessage("Something went wrong signing up. Check console for details.", "error");
         window.mascotShake?.();
-        return;
     }
-
-    showMessage("Check your email to confirm account", "success");
 }
 
 // ===================== LOGOUT =====================
@@ -126,6 +138,28 @@ function showProfile(user) {
 
     document.getElementById("user-name-display").innerText =
         user.profile?.name || "User";
+
+    const createdEl = document.getElementById("user-created-display");
+    if (createdEl) {
+        createdEl.innerText = user.created_at
+            ? new Date(user.created_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+              })
+            : "Unknown";
+    }
+
+    const loginEl = document.getElementById("user-login-display");
+    if (loginEl) {
+        loginEl.innerText = user.last_sign_in_at
+            ? new Date(user.last_sign_in_at).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+              })
+            : "Unknown";
+    }
 
     // admin check
     if (user.profile?.role === "admin") {
