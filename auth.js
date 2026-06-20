@@ -15,7 +15,55 @@
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ------------------------------------------------------------
+// Cross-subdomain session storage
+// ------------------------------------------------------------
+// By default the Supabase SDK persists sessions in localStorage,
+// which is scoped per-origin. auth.amhairandbeauty.com (where this
+// script runs and where login happens) and amhairandbeauty.com
+// (where nav.js renders the header) are different origins, so a
+// session saved here used to be invisible there.
+//
+// This adapter stores the session in a cookie scoped to
+// ".amhairandbeauty.com" instead (leading dot = shared across all
+// subdomains). nav.js uses this EXACT same adapter — same domain
+// string, same cookie name behavior — so both scripts read/write
+// the session to the same place. If you change this here, change
+// it in nav.js too, or the two will go out of sync again.
+const AM_COOKIE_DOMAIN = '.amhairandbeauty.com';
+
+function am_setCookie(name, value, days) {
+    const maxAge = days ? `; max-age=${days * 24 * 60 * 60}` : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; domain=${AM_COOKIE_DOMAIN}${maxAge}; secure; samesite=lax`;
+}
+
+function am_getCookieRaw(name) {
+    const eq = name + '=';
+    for (let c of document.cookie.split(';')) {
+        c = c.trim();
+        if (c.indexOf(eq) === 0) return decodeURIComponent(c.substring(eq.length));
+    }
+    return null;
+}
+
+function am_removeCookie(name) {
+    document.cookie = `${name}=; path=/; domain=${AM_COOKIE_DOMAIN}; max-age=0; secure; samesite=lax`;
+}
+
+const am_cookieStorage = {
+    getItem: (key) => am_getCookieRaw(key),
+    setItem: (key, value) => am_setCookie(key, value, 7), // 7-day session cookie, matches typical refresh-token lifetime
+    removeItem: (key) => am_removeCookie(key),
+};
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+        storage: am_cookieStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+    },
+});
 
 // Share this single client with other scripts on the page (reviews.js,
 // nav.js, etc). Without this, any script doing `window.supabaseClient`
