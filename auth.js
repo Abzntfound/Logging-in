@@ -4,7 +4,7 @@
 
 // ===================== SUPABASE INIT ====================
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
-const SUPABASE_KEY = "YOUR_SUPABASE_KEY";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4"; // <-- replace with your real anon key
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -21,11 +21,16 @@ async function getUser() {
 }
 
 async function getProfile(userId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
+
+    if (error) {
+        console.warn("getProfile error:", error.message);
+        return null;
+    }
 
     return data || null;
 }
@@ -93,7 +98,11 @@ function saveLocalUser(user) {
 }
 
 function getLocalUser() {
-    return JSON.parse(localStorage.getItem("am_user"));
+    try {
+        return JSON.parse(localStorage.getItem("am_user"));
+    } catch {
+        return null;
+    }
 }
 
 // ======================================================
@@ -169,7 +178,7 @@ function showAdminDashboard() {
         <h3>Admin Dashboard</h3>
         <button id="load-users-btn">Load Users</button>
         <div id="admin-users"></div>
-        <button onclick="document.getElementById('admin-panel').remove()">
+        <button id="admin-panel-close">
             Close
         </button>
     `;
@@ -179,12 +188,22 @@ function showAdminDashboard() {
     document
         .getElementById("load-users-btn")
         .addEventListener("click", loadUsers);
+
+    document
+        .getElementById("admin-panel-close")
+        .addEventListener("click", () => panel.remove());
 }
 
 async function loadUsers() {
-    const { data } = await supabase.from("profiles").select("*");
+    const container = document.getElementById("admin-users");
+    const { data, error } = await supabase.from("profiles").select("*");
 
-    document.getElementById("admin-users").innerHTML = data
+    if (error) {
+        container.innerHTML = `<div style="color:#e74c3c">Error loading users: ${error.message}</div>`;
+        return;
+    }
+
+    container.innerHTML = (data || [])
         .map(
             (u) => `
             <div style="padding:5px;border-bottom:1px solid #eee">
@@ -204,7 +223,11 @@ function getBasketKey() {
 }
 
 function getBasket() {
-    return JSON.parse(localStorage.getItem(getBasketKey()) || "[]");
+    try {
+        return JSON.parse(localStorage.getItem(getBasketKey()) || "[]");
+    } catch {
+        return [];
+    }
 }
 
 function saveBasket(items) {
@@ -246,43 +269,27 @@ async function loadUser() {
 }
 
 // ======================================================
-// ===================== EVENTS ==========================
+// ===================== MASCOT SYSTEM (state) ===========
 // ======================================================
+// NOTE: all DOM queries for mascots/inputs/pupils now happen
+// inside DOMContentLoaded below, so elements are guaranteed
+// to exist, and "mascots" / "inputs" are each declared once.
 
-window.addEventListener("DOMContentLoaded", () => {
-    loadUser();
+let mascots = [];
+let inputs = [];
+let typingTimer;
+let isTalking = false;
 
-    document.getElementById("login-form")?.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        login(
-            document.getElementById("login-email").value,
-            document.getElementById("login-password").value
-        );
-    });
-
-    document.getElementById("signup-form")?.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        signup(
-            document.getElementById("signup-name").value,
-            document.getElementById("signup-email").value,
-            document.getElementById("signup-password").value
-        );
-    });
-
-    document.getElementById("logout-btn")?.addEventListener("click", logout);
-});
-
-// ======================================================
-// ===================== MASCOT SYSTEM ===================
-// ======================================================
-
-// ================================
-// MASCOT ANIMATION SYSTEM (CLEAN)
-// ================================
-
-const mascots = document.querySelectorAll(".mascot-char");
+const pupilMap = [
+    { pupil: "#pupil-p-l", eye: "#eye-p-l" },
+    { pupil: "#pupil-p-r", eye: "#eye-p-r" },
+    { pupil: "#pupil-o-l", eye: "#eye-o-l" },
+    { pupil: "#pupil-o-r", eye: "#eye-o-r" },
+    { pupil: "#pupil-d-l", eye: "#eye-d-l" },
+    { pupil: "#pupil-d-r", eye: "#eye-d-r" },
+    { pupil: "#pupil-y-l", eye: "#eye-y-l" },
+    { pupil: "#pupil-y-r", eye: "#eye-y-r" }
+];
 
 // -------------------------------
 // Animation helper
@@ -312,41 +319,22 @@ function nodMascots() {
 
 // Random idle behaviour
 function randomMascotAction() {
+    if (!mascots.length) return;
     const m = mascots[Math.floor(Math.random() * mascots.length)];
     const action = Math.random() > 0.5 ? "shaking" : "nodding";
     triggerAnimation(m, action);
 }
 
-// -------------------------------
-// Idle loop
-// -------------------------------
-setInterval(randomMascotAction, 4000);
-
 // expose for auth system
 window.mascotShake = shakeMascots;
 window.mascotNod = nodMascots;
-
-// ================================
-// 👀 EYE TRACKING SYSTEM
-// ================================
-
-const pupils = [
-    { pupil: "#pupil-p-l", eye: "#eye-p-l" },
-    { pupil: "#pupil-p-r", eye: "#eye-p-r" },
-    { pupil: "#pupil-o-l", eye: "#eye-o-l" },
-    { pupil: "#pupil-o-r", eye: "#eye-o-r" },
-    { pupil: "#pupil-d-l", eye: "#eye-d-l" },
-    { pupil: "#pupil-d-r", eye: "#eye-d-r" },
-    { pupil: "#pupil-y-l", eye: "#eye-y-l" },
-    { pupil: "#pupil-y-r", eye: "#eye-y-r" }
-];
 
 // update pupil position based on cursor
 function moveEyes(e) {
     const mouseX = e.clientX;
     const mouseY = e.clientY;
 
-    pupils.forEach(({ pupil, eye }) => {
+    pupilMap.forEach(({ pupil, eye }) => {
         const pupilEl = document.querySelector(pupil);
         const eyeEl = document.querySelector(eye);
 
@@ -370,25 +358,6 @@ function moveEyes(e) {
         pupilEl.setAttribute("cy", parseFloat(eyeEl.getAttribute("cy")) + y);
     });
 }
-
-window.addEventListener("mousemove", moveEyes);
-
-// ================================
-// OPTIONAL: click reaction
-// ================================
-window.addEventListener("click", () => {
-    shakeMascots();
-});
-
-// ================================
-// 👄 TALKING MOUTH SYSTEM
-// ================================
-
-const inputs = document.querySelectorAll("input, textarea");
-const mascots = document.querySelectorAll(".mascot-char");
-
-let typingTimer;
-let isTalking = false;
 
 // start talking
 function startTalking() {
@@ -416,16 +385,9 @@ function handleTyping() {
     }, 600); // stops after user pauses typing
 }
 
-// attach listeners
-inputs.forEach(input => {
-    input.addEventListener("input", handleTyping);
-});
-
 // ================================
 // 😊😢 EMOTION SYSTEM
 // ================================
-
-const mascots = document.querySelectorAll(".mascot-char");
 
 function clearEmotion() {
     mascots.forEach(m => {
@@ -440,7 +402,6 @@ function setHappy() {
         m.classList.add("happy");
     });
 
-    // optional: trigger nod
     window.mascotNod?.();
 }
 
@@ -451,7 +412,6 @@ function setSad() {
         m.classList.add("sad");
     });
 
-    // optional: trigger shake
     window.mascotShake?.();
 }
 
@@ -472,5 +432,47 @@ window.mascotSad = () => {
     setSad();
     autoResetEmotion();
 };
+
+// ======================================================
+// ===================== EVENTS ==========================
+// ======================================================
+
+window.addEventListener("DOMContentLoaded", () => {
+    // --- auth init ---
+    loadUser();
+
+    document.getElementById("login-form")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        login(
+            document.getElementById("login-email").value,
+            document.getElementById("login-password").value
+        );
+    });
+
+    document.getElementById("signup-form")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        signup(
+            document.getElementById("signup-name").value,
+            document.getElementById("signup-email").value,
+            document.getElementById("signup-password").value
+        );
+    });
+
+    document.getElementById("logout-btn")?.addEventListener("click", logout);
+
+    // --- mascot system init (DOM is ready now) ---
+    mascots = Array.from(document.querySelectorAll(".mascot-char"));
+    inputs = Array.from(document.querySelectorAll("input, textarea"));
+
+    setInterval(randomMascotAction, 4000);
+    window.addEventListener("mousemove", moveEyes);
+    window.addEventListener("click", () => shakeMascots());
+
+    inputs.forEach(input => {
+        input.addEventListener("input", handleTyping);
+    });
+});
 
 console.log("A&M CLEAN SYSTEM LOADED ✔");
