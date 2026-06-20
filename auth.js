@@ -462,14 +462,44 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("signup-form")?.addEventListener("submit", (e) => {
         e.preventDefault();
 
+        const password = document.getElementById("signup-password").value;
+        const confirm = document.getElementById("signup-confirm").value;
+
+        if (password !== confirm) {
+            showMessage("Passwords do not match", "error");
+            window.mascotShake?.();
+            return;
+        }
+
         signup(
             document.getElementById("signup-name").value,
             document.getElementById("signup-email").value,
-            document.getElementById("signup-password").value
+            password
         );
     });
 
     document.getElementById("logout-btn")?.addEventListener("click", logout);
+
+    // --- login/signup form switching ---
+    document.getElementById("switch-to-signup")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("login-form").style.display = "none";
+        document.getElementById("signup-form").style.display = "block";
+        document.getElementById("auth-title").innerText = "Create Account";
+        document.getElementById("auth-subtitle").innerText = "Sign up to get started";
+        const msg = document.getElementById("auth-message");
+        if (msg) msg.style.display = "none";
+    });
+
+    document.getElementById("switch-to-login")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("signup-form").style.display = "none";
+        document.getElementById("login-form").style.display = "block";
+        document.getElementById("auth-title").innerText = "Welcome Back!";
+        document.getElementById("auth-subtitle").innerText = "Sign in to continue shopping";
+        const msg = document.getElementById("auth-message");
+        if (msg) msg.style.display = "none";
+    });
 
     // --- mascot system init (DOM is ready now) ---
     mascots = Array.from(document.querySelectorAll(".mascot-char"));
