@@ -2,9 +2,18 @@
 // A&M HAIR & BEAUTY — CLEAN AUTH SYSTEM (FULL REWRITE)
 // ======================================================
 
+// Wrapped in an IIFE so top-level const/let bindings live in this
+// function's scope instead of the shared global lexical scope.
+// That way, even if this script tag somehow gets loaded/executed
+// twice on the same page (duplicate <script> tag, stale cache +
+// fresh file both served, hot-reload tooling, etc.), the second
+// run just gets its own scope instead of throwing
+// "Identifier 'supabase' has already been declared".
+(function () {
+
 // ===================== SUPABASE INIT ====================
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4"; // <-- replace with your real anon key
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -476,3 +485,5 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 console.log("A&M CLEAN SYSTEM LOADED ✔");
+
+})();
