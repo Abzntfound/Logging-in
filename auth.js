@@ -17,6 +17,11 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Share this single client with other scripts on the page (reviews.js,
+// nav.js, etc). Without this, any script doing `window.supabaseClient`
+// gets undefined and silently fails on every call.
+window.supabaseClient = supabase;
+
 // ===================== GLOBAL STATE =====================
 let currentUser = null;
 
