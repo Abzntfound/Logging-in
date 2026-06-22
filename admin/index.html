@@ -74,10 +74,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
+if (!window.__amAdminLoaded) {
+window.__amAdminLoaded = true;
+
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4";
 
-// create OWN client (no auth.js dependency)
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_EMAILS = [
@@ -85,81 +87,51 @@ const ADMIN_EMAILS = [
 ];
 
 async function adminLoad() {
-    const {
-        data: { user }
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
         window.location.href = "/";
         return;
     }
 
-    // admin check (email-based like you wanted)
     if (!ADMIN_EMAILS.includes(user.email)) {
         document.body.innerHTML = "<h1>❌ Access Denied</h1>";
         return;
     }
 
-    document.getElementById("status").innerHTML =
-        `<h2>Welcome Admin ${user.email}</h2>`;
+    document.getElementById("status").innerHTML = `<h2>Welcome Admin ${user.email}</h2>`;
 
     loadUsers();
     loadReviews();
 }
 
-// ================= USERS =================
 async function loadUsers() {
-    const { data: users, error } = await supabase
-        .from("profiles")
-        .select("*");
-
-    if (error) {
-        console.error(error);
-        return;
-    }
+    const { data: users, error } = await supabase.from("profiles").select("*");
+    if (error) { console.error(error); return; }
 
     const tbody = document.getElementById("users");
-
     tbody.innerHTML = users.map(u => `
         <tr>
             <td>${u.email || "No email"}</td>
             <td>${u.id}</td>
             <td>${u.role || "user"}</td>
-            <td>
-                <button onclick="banUser('${u.id}')">Ban</button>
-            </td>
+            <td><button onclick="banUser('${u.id}')">Ban</button></td>
         </tr>
     `).join("");
 
     document.getElementById("usersTable").style.display = "table";
 }
 
-// ================= BAN USER =================
 async function banUser(userId) {
-    const confirmBan = confirm("Ban this user?");
-    if (!confirmBan) return;
-
-    const { error } = await supabase
-        .from("profiles")
-        .update({ role: "banned" })
-        .eq("id", userId);
-
-    if (error) {
-        alert("Failed to ban user");
-        return;
-    }
-
+    if (!confirm("Ban this user?")) return;
+    const { error } = await supabase.from("profiles").update({ role: "banned" }).eq("id", userId);
+    if (error) { alert("Failed to ban user"); return; }
     loadUsers();
 }
 
-// ================= REVIEWS =================
 async function loadReviews() {
     const container = document.getElementById("reviews");
-
-    const { data: reviews, error } = await supabase
-        .from("reviews")
-        .select("*")
-        .order("created_at", { ascending: false });
+    const { data: reviews, error } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
 
     if (error) {
         container.innerHTML = "<p style='color:red'>Error loading reviews</p>";
@@ -177,25 +149,16 @@ async function loadReviews() {
     `).join("");
 }
 
-// ================= DELETE REVIEW =================
 async function deleteReview(id) {
-    const ok = confirm("Delete this review?");
-    if (!ok) return;
-
-    const { error } = await supabase
-        .from("reviews")
-        .delete()
-        .eq("id", id);
-
-    if (error) {
-        alert("Failed to delete");
-        return;
-    }
-
+    if (!confirm("Delete this review?")) return;
+    const { error } = await supabase.from("reviews").delete().eq("id", id);
+    if (error) { alert("Failed to delete"); return; }
     loadReviews();
 }
 
 window.addEventListener("DOMContentLoaded", adminLoad);
+
+} // end __amAdminLoaded guard
 </script>
 </body>
 </html>
