@@ -1,3 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>A&M Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 30px;
+            background: #f5f5f5;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td, th {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .ban {
+            background: #e74c3c;
+            color: white;
+            border: none;
+        }
+
+        .unban {
+            background: #2ecc71;
+            color: white;
+            border: none;
+        }
+
+        .error { color: red; }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+    <h1>Admin Dashboard</h1>
+    <div id="status">Loading...</div>
+
+    <table id="usersTable" style="display:none">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>User ID</th>
+                <th>Status</th>
+                <th>Actions</th>
+                <th>Parcel</th>
+            </tr>
+        </thead>
+        <tbody id="users"></tbody>
+    </table>
+    <h2>Reviews</h2>
+    <div id="reviews"></div>
+</div>
+
+<script src="/auth.js"></script>
+
 <script>
 
 const ADMIN_EMAILS = [
@@ -98,3 +173,5 @@ async function deleteReview(id) {
 window.addEventListener("DOMContentLoaded", adminLoad);
 
 </script>
+</body>
+</html>
