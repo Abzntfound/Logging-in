@@ -222,19 +222,22 @@ async function loadReviews() {
     const { data: reviews, error } = await supabase
         .from("reviews")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("date", { ascending: false });
 
     if (error) {
-        container.innerHTML = "<p style='color:red'>Error loading reviews</p>";
+        container.innerHTML = "<p style='color:red'>Error loading reviews: " + error.message + "</p>";
         return;
     }
 
     container.innerHTML = reviews.map(r => `
         <div style="padding:10px;border-bottom:1px solid #ddd">
-            <b>${r.user_email || "Unknown"}</b><br/>
-            ${r.content}<br/>
-            <small>${new Date(r.created_at).toLocaleString()}</small>
-            <br/><br/>
+            <b>${r.name || "Unknown"}</b> — ${"⭐".repeat(r.rating || 0)}<br/>
+            ${r.review}<br/>
+            <small>${r.date ? new Date(r.date).toLocaleString() : "Unknown date"}</small>
+            ${r.reply ? `<div style="margin-top:8px;padding:8px;background:#f5f5f5;border-radius:6px">
+                <b>Reply${r.reply_author ? " from " + r.reply_author : ""}:</b> ${r.reply}
+            </div>` : ""}
+            <br/>
             <button onclick="window.__amAdmin.deleteReview('${r.id}')">Delete</button>
         </div>
     `).join("");
