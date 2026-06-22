@@ -191,7 +191,9 @@ async function loadUsers() {
             <td>${u.id}</td>
             <td>${u.role || "user"}</td>
             <td>
-                <button onclick="window.__amAdmin.banUser('${u.id}')">Ban</button>
+                ${u.role === "banned"
+                    ? `<button class="unban" onclick="window.__amAdmin.unbanUser('${u.id}')">Unban</button>`
+                    : `<button class="ban" onclick="window.__amAdmin.banUser('${u.id}')">Ban</button>`}
             </td>
         </tr>
     `).join("");
@@ -199,21 +201,51 @@ async function loadUsers() {
     document.getElementById("usersTable").style.display = "table";
 }
 
-async function banUser(userId) {
-    const confirmBan = confirm("Ban this user?");
-    if (!confirmBan) return;
+// Calls the ban-user Edge Function, which actually blocks login
+// at the auth level (not just labeling the row in `profiles`).
+async function callBanFunction(userId, action) {
+    const { data: { session } } = await supabase.auth.getSession();
 
-    const { error } = await supabase
-        .from("profiles")
-        .update({ role: "banned" })
-        .eq("id", userId);
-
-    if (error) {
-        alert("Failed to ban user: " + error.message);
-        return;
+    if (!session) {
+        alert("Your session expired — please log in again.");
+        return false;
     }
 
-    loadUsers();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ban-user`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId, action }),
+    });
+
+    const result = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        alert(`Failed to ${action} user: ${result.error || res.statusText}`);
+        return false;
+    }
+
+    return true;
+}
+
+async function banUser(userId) {
+    const confirmBan = confirm("Ban this user? This blocks their login entirely, not just their access in the dashboard.");
+    if (!confirmBan) return;
+
+    if (await callBanFunction(userId, "ban")) {
+        loadUsers();
+    }
+}
+
+async function unbanUser(userId) {
+    const confirmUnban = confirm("Unban this user? They'll be able to log in again.");
+    if (!confirmUnban) return;
+
+    if (await callBanFunction(userId, "unban")) {
+        loadUsers();
+    }
 }
 
 async function loadReviews() {
@@ -262,7 +294,7 @@ async function deleteReview(id) {
 
 // Expose just the two functions the inline onclick handlers need,
 // instead of polluting window with everything in this IIFE.
-window.__amAdmin = { banUser, deleteReview };
+window.__amAdmin = { banUser, unbanUser, deleteReview };
 
 window.addEventListener("DOMContentLoaded", adminLoad);
 
