@@ -184,42 +184,64 @@ function getLocalUser() {
 // ======================================================
 
 function showProfile(user) {
-    document.getElementById("auth-container").style.display = "none";
-    document.getElementById("user-profile").style.display = "block";
 
-    document.getElementById("user-email-display").innerText = user.email;
+    const authContainer = document.getElementById("auth-container");
+    const userProfile = document.getElementById("user-profile");
 
-    document.getElementById("user-name-display").innerText =
-        user.profile?.name || "User";
+    // Only run these if they exist (index.html has them, admin doesn't)
+    if (authContainer) {
+        authContainer.style.display = "none";
+    }
+
+    if (userProfile) {
+        userProfile.style.display = "block";
+    }
+
+
+    const emailEl = document.getElementById("user-email-display");
+    if (emailEl) {
+        emailEl.innerText = user.email;
+    }
+
+
+    const nameEl = document.getElementById("user-name-display");
+    if (nameEl) {
+        nameEl.innerText =
+            user.profile?.name || "User";
+    }
+
 
     const createdEl = document.getElementById("user-created-display");
+
     if (createdEl) {
         createdEl.innerText = user.created_at
             ? new Date(user.created_at).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric"
-              })
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+            })
             : "Unknown";
     }
 
+
     const loginEl = document.getElementById("user-login-display");
+
     if (loginEl) {
         loginEl.innerText = user.last_sign_in_at
             ? new Date(user.last_sign_in_at).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric"
-              })
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+            })
             : "Unknown";
     }
 
-    // admin check
+
+    // Admin check
     if (user.profile?.role === "admin") {
         enableAdminMode();
     }
 }
-
 function showAuth() {
     document.getElementById("auth-container").style.display = "block";
     document.getElementById("user-profile").style.display = "none";
