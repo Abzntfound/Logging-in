@@ -1,78 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>A&M Admin Dashboard</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 30px;
-            background: #f5f5f5;
-        }
-
-        .box {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,.1);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        td, th {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .error {
-            color: red;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="box">
-    <h1>Admin Dashboard</h1>
-
-    <div id="status">Loading...</div>
-
-    <table id="usersTable" style="display:none">
-        <thead>
-            <tr>
-                <th>Email</th>
-                <th>ID</th>
-            </tr>
-        </thead>
-
-        <tbody id="users"></tbody>
-    </table>
-</div>
-
-<script src="/auth.js"></script>
-
 <script>
 
 const ADMIN_EMAILS = [
     "adube6113@outlook.com"
 ];
 
+const supabase = window.supabaseClient;
+
 async function adminLoad() {
 
-    const supabase = window.supabaseClient;
-
-    if (!supabase) {
-        document.getElementById("status").innerHTML =
-            `<p class="error">Supabase client missing.</p>`;
-        return;
-    }
-
-    // Get logged in user
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -80,43 +15,86 @@ async function adminLoad() {
         return;
     }
 
-    // ✅ EMAIL-BASED ADMIN CHECK (FIX)
     if (!ADMIN_EMAILS.includes(user.email)) {
         document.body.innerHTML = "<h1>❌ Access Denied</h1>";
         return;
     }
 
-    // Load profiles
-    const { data: users, error } = await supabase
+    loadUsers();
+    loadReviews(); // ✅ NEW
+}
+
+// ================= USERS =================
+async function loadUsers() {
+
+    const { data: users } = await supabase
         .from("profiles")
         .select("*");
 
-    if (error) {
-        console.error(error);
-        document.getElementById("status").innerHTML =
-            `<p class="error">Error loading users</p>`;
-        return;
-    }
-
-    document.getElementById("status").innerHTML =
-        `<h2>Welcome Admin ${user.email}</h2>`;
-
-    const table = document.getElementById("usersTable");
     const tbody = document.getElementById("users");
-
-    table.style.display = "table";
 
     tbody.innerHTML = users.map(u => `
         <tr>
-            <td>${u.email || "No email"}</td>
+            <td>${u.email}</td>
             <td>${u.id}</td>
         </tr>
     `).join("");
 }
 
+// ================= REVIEWS =================
+async function loadReviews() {
+
+    const container = document.getElementById("reviews");
+
+    const { data: reviews, error } = await supabase
+        .from("reviews")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        container.innerHTML = `<p style="color:red;">Error loading reviews</p>`;
+        return;
+    }
+
+    container.innerHTML = reviews.map(r => `
+        <div style="
+            padding:10px;
+            border-bottom:1px solid #ddd;
+            margin-bottom:10px;
+        ">
+            <b>${r.user_email || "Unknown user"}</b><br/>
+            ${r.content}<br/>
+            <small>${new Date(r.created_at).toLocaleString()}</small>
+
+            <br/><br/>
+
+            <button onclick="deleteReview('${r.id}')"
+                style="background:#e74c3c;color:white;border:none;padding:5px 10px;">
+                Delete
+            </button>
+        </div>
+    `).join("");
+}
+
+// ================= DELETE REVIEW =================
+async function deleteReview(id) {
+
+    const confirmDelete = confirm("Delete this review?");
+    if (!confirmDelete) return;
+
+    const { error } = await supabase
+        .from("reviews")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        alert("Failed to delete review");
+        return;
+    }
+
+    loadReviews(); // refresh
+}
+
 window.addEventListener("DOMContentLoaded", adminLoad);
 
 </script>
-
-</body>
-</html>
