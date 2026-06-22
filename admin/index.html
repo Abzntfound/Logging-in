@@ -74,17 +74,78 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-if (!window.__amAdminLoaded) {
-window.__amAdminLoaded = true;
+// Wrapped in an IIFE so top-level const/let bindings live in this
+// function's scope instead of the shared global lexical scope —
+// matches the convention used in your login page script, and
+// prevents "Identifier 'supabase' has already been declared" if
+// this script tag is ever loaded twice on the same page.
+(function () {
 
 const SUPABASE_URL = "https://bipejrjipvoqvkwuzftz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpcGVqcmppcHZvcXZrd3V6ZnR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzYzMjMsImV4cCI6MjA5NzIxMjMyM30.Z8V7chc-UOK2UU5dxBydgLbT0u1DUv2_DGtisLmZWq4";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ------------------------------------------------------------
+// IMPORTANT: this must be the EXACT same cookie storage adapter
+// used in your login page (and nav.js) — same domain string,
+// same cookie behavior. If these two ever drift apart, this
+// page will go right back to "logged out" even though you ARE
+// logged in everywhere else. This is the bug we just fixed —
+// don't let it regress.
+// ------------------------------------------------------------
+const AM_COOKIE_DOMAIN = '.amhairandbeauty.com';
 
-const ADMIN_EMAILS = [
-    "adube6113@outlook.com"
-];
+function am_setCookie(name, value, days) {
+    const maxAge = days ? `; max-age=${days * 24 * 60 * 60}` : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; domain=${AM_COOKIE_DOMAIN}${maxAge}; secure; samesite=lax`;
+}
+
+function am_getCookieRaw(name) {
+    const eq = name + '=';
+    for (let c of document.cookie.split(';')) {
+        c = c.trim();
+        if (c.indexOf(eq) === 0) return decodeURIComponent(c.substring(eq.length));
+    }
+    return null;
+}
+
+function am_removeCookie(name) {
+    document.cookie = `${name}=; path=/; domain=${AM_COOKIE_DOMAIN}; max-age=0; secure; samesite=lax`;
+}
+
+const am_cookieStorage = {
+    getItem: (key) => am_getCookieRaw(key),
+    setItem: (key, value) => am_setCookie(key, value, 7),
+    removeItem: (key) => am_removeCookie(key),
+};
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+        storage: am_cookieStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+    },
+});
+
+// Match the pattern used elsewhere on the site (login page sets
+// window.supabaseClient too) in case other shared scripts run on
+// this page later.
+window.supabaseClient = supabase;
+
+async function getProfile(userId) {
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+    if (error) {
+        console.warn("getProfile error:", error.message);
+        return null;
+    }
+
+    return data;
+}
 
 async function adminLoad() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -94,28 +155,44 @@ async function adminLoad() {
         return;
     }
 
-    if (!ADMIN_EMAILS.includes(user.email)) {
+    const profile = await getProfile(user.id);
+
+    // Admin check now matches the rest of the site (profiles.role,
+    // same flag your login page and your is_admin() database
+    // function both already use) instead of a separate hardcoded
+    // email list that could drift out of sync.
+    if (profile?.role !== "admin") {
         document.body.innerHTML = "<h1>❌ Access Denied</h1>";
         return;
     }
 
-    document.getElementById("status").innerHTML = `<h2>Welcome Admin ${user.email}</h2>`;
+    document.getElementById("status").innerHTML =
+        `<h2>Welcome Admin ${user.email}</h2>`;
 
     loadUsers();
     loadReviews();
 }
 
 async function loadUsers() {
-    const { data: users, error } = await supabase.from("profiles").select("*");
-    if (error) { console.error(error); return; }
+    const { data: users, error } = await supabase
+        .from("profiles")
+        .select("*");
+
+    if (error) {
+        console.error(error);
+        return;
+    }
 
     const tbody = document.getElementById("users");
+
     tbody.innerHTML = users.map(u => `
         <tr>
             <td>${u.email || "No email"}</td>
             <td>${u.id}</td>
             <td>${u.role || "user"}</td>
-            <td><button onclick="banUser('${u.id}')">Ban</button></td>
+            <td>
+                <button onclick="window.__amAdmin.banUser('${u.id}')">Ban</button>
+            </td>
         </tr>
     `).join("");
 
@@ -123,15 +200,29 @@ async function loadUsers() {
 }
 
 async function banUser(userId) {
-    if (!confirm("Ban this user?")) return;
-    const { error } = await supabase.from("profiles").update({ role: "banned" }).eq("id", userId);
-    if (error) { alert("Failed to ban user"); return; }
+    const confirmBan = confirm("Ban this user?");
+    if (!confirmBan) return;
+
+    const { error } = await supabase
+        .from("profiles")
+        .update({ role: "banned" })
+        .eq("id", userId);
+
+    if (error) {
+        alert("Failed to ban user: " + error.message);
+        return;
+    }
+
     loadUsers();
 }
 
 async function loadReviews() {
     const container = document.getElementById("reviews");
-    const { data: reviews, error } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+
+    const { data: reviews, error } = await supabase
+        .from("reviews")
+        .select("*")
+        .order("created_at", { ascending: false });
 
     if (error) {
         container.innerHTML = "<p style='color:red'>Error loading reviews</p>";
@@ -144,21 +235,35 @@ async function loadReviews() {
             ${r.content}<br/>
             <small>${new Date(r.created_at).toLocaleString()}</small>
             <br/><br/>
-            <button onclick="deleteReview('${r.id}')">Delete</button>
+            <button onclick="window.__amAdmin.deleteReview('${r.id}')">Delete</button>
         </div>
     `).join("");
 }
 
 async function deleteReview(id) {
-    if (!confirm("Delete this review?")) return;
-    const { error } = await supabase.from("reviews").delete().eq("id", id);
-    if (error) { alert("Failed to delete"); return; }
+    const ok = confirm("Delete this review?");
+    if (!ok) return;
+
+    const { error } = await supabase
+        .from("reviews")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        alert("Failed to delete: " + error.message);
+        return;
+    }
+
     loadReviews();
 }
 
+// Expose just the two functions the inline onclick handlers need,
+// instead of polluting window with everything in this IIFE.
+window.__amAdmin = { banUser, deleteReview };
+
 window.addEventListener("DOMContentLoaded", adminLoad);
 
-} // end __amAdminLoaded guard
+})();
 </script>
 </body>
 </html>
