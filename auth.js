@@ -623,6 +623,4 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-console.log("A&M CLEAN SYSTEM LOADED ✔");
-
 })();
