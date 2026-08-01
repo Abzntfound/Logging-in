@@ -163,6 +163,64 @@ async function logout() {
     location.reload();
 }
 
+// ===================== SETTINGS BUTTON =====================
+
+const settingsBtn = document.getElementById("settings-btn");
+const settingsPanel = document.getElementById("settings-panel");
+
+settingsBtn?.addEventListener("click", () => {
+
+    if (!settingsPanel) return;
+
+    const isOpen = settingsPanel.style.display === "block";
+
+    settingsPanel.style.display = isOpen ? "none" : "block";
+
+});
+
+// ===================== THEME SETTINGS =====================
+
+const themeButtons = document.querySelectorAll(".theme-btn");
+
+themeButtons.forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+        const theme = btn.dataset.theme;
+
+        themeButtons.forEach(b =>
+            b.classList.remove("active")
+        );
+
+        btn.classList.add("active");
+
+        document.body.dataset.theme = theme;
+
+    });
+
+});
+
+document.getElementById("save-settings-btn")
+?.addEventListener("click", () => {
+
+    const activeTheme =
+        document.querySelector(".theme-btn.active")
+        ?.dataset.theme || "dark";
+
+
+    localStorage.setItem(
+        "am_theme",
+        activeTheme
+    );
+
+
+    showMessage(
+        "Settings saved!",
+        "success"
+    );
+
+});
+
 // ======================================================
 // ===================== LOCAL CACHE =====================
 // ======================================================
@@ -330,6 +388,12 @@ async function loadUsers() {
         `
         )
         .join("");
+
+    const savedTheme = localStorage.getItem("am_theme");
+
+    if (savedTheme) {
+        document.body.dataset.theme = savedTheme;
+}
 }
 
 // ======================================================
